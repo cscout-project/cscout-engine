@@ -35,12 +35,14 @@
 <ch><ti>SQL Back-end</ti><fi>sql</fi></ch>
 <ch><ti>Schema of the Generated Database</ti><fi>dbschema</fi></ch>
 <ch><ti>Examples of SQL Queries</ti><fi>qeg</fi></ch>
+<ch><ti>REST API Specification</ti><fi>api</fi></ch>
 <ch><ti>Source Code Reconstitution</ti><fi>reconst</fi></ch>
 <ch><ti>Details of the Collected Metrics</ti><fi>metrics</fi></ch>
 <ch><ti>Shortcomings</ti><fi>short</fi></ch>
 <ch><ti>Error Messages</ti><fi>error</fi></ch>
 <ch><ti>License</ti><fi>license</fi></ch>
 <ch><ti>Frequently Asked Questions</ti><fi>faq</fi></ch>
+<ch><ti>The csapi Command Manual Page</ti><fi>mancsapi</fi></ch>
 <ch><ti>The cscc Command Manual Page</ti><fi>mancscc</fi></ch>
 <ch><ti>The cscoco Command Manual Page</ti><fi>mancscoco</fi></ch>
 <ch><ti>The cscout Command Manual Page</ti><fi>mancscout</fi></ch>

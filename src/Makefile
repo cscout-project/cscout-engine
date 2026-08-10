@@ -221,6 +221,7 @@ test:
 	./runtest.sh $(TEST_FLAGS)
 	cd test/csmake && ./runtest.sh
 	make -C csmerge test
+	python3 test_csapi.py
 
 tags:
 	ctags *.cpp *.h *.y
@@ -276,6 +277,7 @@ install: build/cscout
 	for i in ../man/*.1 ; do install -m 644 $$i $(MANDIR) ; done
 
 uninstall:
+	rm -f "$(PREFIX)/bin/csapi"
 	rm -f "$(PREFIX)/bin/cscc"
 	rm -f "$(PREFIX)/bin/cscout"
 	rm -f "$(PREFIX)/bin/csmake"

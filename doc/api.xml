@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<notes>
+<em>CScout</em> includes a REST API server (<code>csapi</code>)
+that allows other tools, such as IDE extensions, to query analysis results
+programmatically.
+<p />
+The server exposes CScout's SQL database as JSON-formatted HTTP endpoints.
+The API is documented using the OpenAPI standard in <code>doc/csapi.yaml</code>.
+You can also view this documentation in an interactive, human-readable HTML form
+by opening <code>doc/csapi.html</code> in your web browser.
+</notes>

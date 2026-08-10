@@ -1,0 +1,113 @@
+.TH CSAPI 1 "7 July 2026"
+.\"
+.\" (C) Copyright 2008-2026 Diomidis Spinellis
+.\" (C) Copyright 2026 Ujjwal Aggarwal
+.\"
+.\" This file is part of CScout.
+.\"
+.\" CScout is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" CScout is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with CScout.  If not, see <http://www.gnu.org/licenses/>.
+.\"
+.SH NAME
+csapi \- REST API server for querying a CScout SQLite database
+.SH SYNOPSIS
+.B csapi
+.RB [ \-h ]
+.RB [ \-p
+.IR port ]
+.I db
+.SH DESCRIPTION
+.B csapi
+starts a lightweight REST API server to query a CScout SQLite database.
+The database can be produced by running
+.IR cscout (1)
+with the
+.B \-s sqlite
+option, or with
+.IR csmerge (1).
+.PP
+The server listens on
+.B localhost
+(127.0.0.1) only and is intended for use by local tools such as the CScout
+VS Code extension, CI scripts, and other programs that consume CScout
+whole-program C analysis data.
+.PP
+Upon startup, the database is verified. Database indexes are dynamically
+created on demand when query requests are processed, ensuring high-performance lookups.
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Display a brief usage message and exit.
+.TP
+.BR \-p ", " \-\-port " " \fIport\fR
+The port to listen on.
+Defaults to 8081.
+.SH ARGUMENTS
+.TP
+.I db
+Path to the SQLite database file containing the CScout analysis dataset.
+.SH ENDPOINTS
+The HTTP GET endpoints exposed by the server (such as
+.B /status\fR,
+.B /quit\fR,
+.B /identifiers\fR,
+.B /identifier\fR,
+.B /files\fR,
+.B /functions\fR,
+and
+.B /rename/preview\fR)
+are documented in detail using the OpenAPI standard.
+For a complete reference of all endpoints, parameters, and response schemas, see the OpenAPI specification file:
+.I doc/csapi.yaml
+or open the interactive documentation viewer:
+.I doc/csapi.html
+in your web browser.
+.SH EXAMPLE
+Generate a CScout database from a project and start the API server:
+.PP
+.DS
+.ft C
+.nf
+cscout \-s sqlite project.cs | sqlite3 project.db
+csapi project.db \-p 8080
+.ft P
+.fi
+.DE
+.PP
+Query unused identifiers:
+.PP
+.DS
+.ft C
+.nf
+curl http://localhost:8080/identifiers?unused=true
+.ft P
+.fi
+.DE
+.PP
+Preview renaming an identifier:
+.PP
+.DS
+.ft C
+.nf
+curl "http://localhost:8080/rename/preview?eid=12345&newname=new_name"
+.ft P
+.fi
+.DE
+.SH "SEE ALSO"
+\fIcscout\fP(1),
+\fIcsmake\fP(1),
+\fIcscoco\fP(1),
+\fIcssplit\fP(1),
+\fIcsmerge\fP(1)
+.SH AUTHOR
+(C) Copyright 2026 Diomidis Spinellis and Ujjwal Aggarwal.

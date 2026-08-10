@@ -103,6 +103,7 @@ install $TMPFILE "$PREFIX/bin/cscc"
 
 install cscut.sh "$PREFIX/bin/cscut"
 install cssplit.py "$PREFIX/bin/cssplit"
+install csapi.py "$PREFIX/bin/csapi"
 # Python script requiring include path replacement
 sed "s|INSTALL_INCLUDE|$INCLUDE_DIR|g" cscoco.py >$TMPFILE
 install $TMPFILE "$PREFIX/bin/cscoco"

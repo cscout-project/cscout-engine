@@ -1,7 +1,7 @@
 DESTDIR=/dds/pubs/web/home/cscout
 NOTETOOLS=/dds/pubs/courses/tools
 MANDOC=mancscout.xml mancswc.xml mancsmake.xml mancscc.xml mancscut.xml \
-       mancssplit.xml mancsmerge.xml mancsreconst.xml mancscoco.xml
+       mancssplit.xml mancsmerge.xml mancsreconst.xml mancscoco.xml mancsapi.xml
 
 .SUFFIXES:.java .dot .ps .gif .pic .eps .png .1
 

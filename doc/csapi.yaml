@@ -1,0 +1,800 @@
+openapi: 3.0.0
+info:
+  title: CScout REST API
+  description: REST API server for querying a CScout SQLite database.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081
+    description: Default local server
+
+paths:
+  /status:
+    get:
+      summary: Server health check
+      responses:
+        '200':
+          description: Server is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  indexes_ready:
+                    type: boolean
+
+  /quit:
+    get:
+      summary: Stop the server
+      responses:
+        '200':
+          description: Shutdown initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: quit
+
+  /identifiers:
+    get:
+      summary: Search identifiers
+      description: List identifiers matching the specified filters. Supports pagination.
+      parameters:
+        - name: unused
+          in: query
+          schema: { type: boolean }
+        - name: macro
+          in: query
+          schema: { type: boolean }
+        - name: fun
+          in: query
+          schema: { type: boolean }
+        - name: readonly
+          in: query
+          schema: { type: boolean }
+        - name: lscope
+          in: query
+          schema: { type: boolean }
+        - name: cscope
+          in: query
+          schema: { type: boolean }
+        - name: macroarg
+          in: query
+          schema: { type: boolean }
+        - name: ordinary
+          in: query
+          schema: { type: boolean }
+        - name: file_spanning
+          in: query
+          description: Identifiers appearing in more than one file.
+          schema: { type: boolean }
+        - name: not_file_spanning
+          in: query
+          description: Identifiers that do not span files.
+          schema: { type: boolean }
+        - name: name
+          in: query
+          description: Substring match on identifier name.
+          schema: { type: string }
+        - name: name_ne
+          in: query
+          description: Exact negative match on identifier name.
+          schema: { type: string }
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+      responses:
+        '200':
+          description: List of identifiers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Identifier'
+
+  /identifier:
+    get:
+      summary: Get identifier token locations
+      parameters:
+        - name: eid
+          in: query
+          required: true
+          schema: { type: integer }
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+      responses:
+        '200':
+          description: Identifier details and paged token locations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  identifier:
+                    $ref: '#/components/schemas/Identifier'
+                  locations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Location'
+        '400':
+          description: Missing eid parameter
+        '404':
+          description: Identifier not found
+
+  /identifier/detail:
+    get:
+      summary: Get full identifier detail
+      description: Returns attributes, occurrence count, projects, dependent files, associated functions, and function detail.
+      parameters:
+        - name: eid
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Full identifier detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  identifier:
+                    $ref: '#/components/schemas/Identifier'
+                  occurrences:
+                    type: integer
+                  locations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Location'
+                  projects:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+                  dependent_files:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/File'
+                  associated_functions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Function'
+                  function_detail:
+                    nullable: true
+                    type: object
+        '400':
+          description: Missing eid parameter
+        '404':
+          description: Identifier not found
+
+  /identifiers/counts:
+    get:
+      summary: Identifier counts per category
+      description: Returns COUNT(*) for each identifier sidebar category in one query.
+      responses:
+        '200':
+          description: Category counts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  all: { type: integer }
+                  readonly: { type: integer }
+                  writable: { type: integer }
+                  file_spanning: { type: integer }
+                  unused_project: { type: integer }
+                  unused_file: { type: integer }
+                  unused_macros: { type: integer }
+                  static_vars: { type: integer }
+                  static_funs: { type: integer }
+
+  /attributes/identifiers:
+    get:
+      summary: Identifier attribute metadata
+      description: Returns attribute names and corresponding IDS column ids, read from METADATA table or built-in defaults.
+      responses:
+        '200':
+          description: List of attribute id/name pairs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: DB column name in IDS table
+                    name:
+                      type: string
+                      description: Human-readable attribute name
+
+  /attributes/files:
+    get:
+      summary: File metric attribute metadata
+      description: Returns file metric names and corresponding FILEMETRICS column ids.
+      responses:
+        '200':
+          description: List of metric id/name pairs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    name: { type: string }
+
+  /files:
+    get:
+      summary: List all files with optional filters
+      parameters:
+        - name: writable
+          in: query
+          description: Writable files only (RO=0)
+          schema: { type: integer }
+        - name: ro
+          in: query
+          description: Read-only files only (RO=1)
+          schema: { type: integer }
+        - name: fre
+          in: query
+          description: Filter filenames matching SQL LIKE pattern
+          schema: { type: string }
+        - name: has_unused
+          in: query
+          description: Files containing unused writable identifiers
+          schema: { type: integer }
+        - name: no_statements
+          in: query
+          description: Writable .c files with no statements (NSTMT=0)
+          schema: { type: integer }
+        - name: unprocessed
+          in: query
+          description: Files with unprocessed lines (NULINE>0)
+          schema: { type: integer }
+        - name: has_strings
+          in: query
+          description: Files containing string literals (NSTRING>0)
+          schema: { type: integer }
+        - name: h_with_includes
+          in: query
+          description: Writable .h files with #include directives
+          schema: { type: integer }
+      responses:
+        '200':
+          description: List of files matching the filters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/File'
+
+  /files/counts:
+    get:
+      summary: File counts per category
+      responses:
+        '200':
+          description: Category counts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  all: { type: integer }
+                  readonly: { type: integer }
+                  writable: { type: integer }
+                  with_unused: { type: integer }
+                  no_statements: { type: integer }
+                  unprocessed: { type: integer }
+                  with_strings: { type: integer }
+                  h_with_includes: { type: integer }
+
+  /file/detail:
+    get:
+      summary: Full file detail
+      description: Returns file attributes, metrics, defined functions, included files, and files that include it.
+      parameters:
+        - name: fid
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: File detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  file:
+                    $ref: '#/components/schemas/File'
+                  metrics:
+                    type: object
+                  functions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Function'
+                  includes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/File'
+                  included_by:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/File'
+        '400':
+          description: Missing fid parameter
+        '404':
+          description: File not found
+
+  /filemetrics:
+    get:
+      summary: File metrics
+      parameters:
+        - name: fid
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Pre-cpp and post-cpp metrics rows for the file
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FileMetrics'
+        '400':
+          description: Missing fid parameter
+        '404':
+          description: File not found
+
+  /filemetrics/aggregate:
+    get:
+      summary: All file metrics rows
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FileMetrics'
+
+  /filegraph/include:
+    get:
+      summary: File include dependency graph (SVG)
+      parameters:
+        - name: writable
+          in: query
+          description: Limit to writable files only.
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: HTML page containing an SVG graphviz graph
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /filegraph/compile:
+    get:
+      summary: Compile-time dependency graph (SVG)
+      parameters:
+        - name: writable
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /filegraph/control:
+    get:
+      summary: Control dependency graph via function calls (SVG)
+      parameters:
+        - name: writable
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /filegraph/data:
+    get:
+      summary: Data dependency graph via global variables (SVG)
+      parameters:
+        - name: writable
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /functions:
+    get:
+      summary: Search functions
+      parameters:
+        - name: defined
+          in: query
+          schema: { type: boolean }
+        - name: filescoped
+          in: query
+          schema: { type: boolean }
+        - name: ismacro
+          in: query
+          schema: { type: boolean }
+        - name: fanin
+          in: query
+          description: Exact fan-in value.
+          schema: { type: integer }
+        - name: max_fanin
+          in: query
+          description: Maximum fan-in value (inclusive).
+          schema: { type: integer }
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+      responses:
+        '200':
+          description: List of functions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Function'
+
+  /functions/byname:
+    get:
+      summary: Get a function by name
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The first matching defined function, or null
+          content:
+            application/json:
+              schema:
+                nullable: true
+                allOf:
+                  - $ref: '#/components/schemas/Function'
+
+  /functions/counts:
+    get:
+      summary: Function counts per category
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  all: { type: integer }
+                  project_scoped: { type: integer }
+                  file_scoped: { type: integer }
+                  not_called: { type: integer }
+                  called_once: { type: integer }
+
+  /funmetrics:
+    get:
+      summary: Function metrics
+      parameters:
+        - name: fnid
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Pre-cpp and post-cpp metrics rows for the function
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FunctionMetrics'
+        '400':
+          description: Missing fnid parameter
+        '404':
+          description: Function not found
+
+  /funmetrics/aggregate:
+    get:
+      summary: All function metrics rows
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FunctionMetrics'
+
+  /callers:
+    get:
+      summary: Functions that call a given function
+      parameters:
+        - name: fnid
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CallInfo'
+        '400':
+          description: Missing fnid parameter
+
+  /callees:
+    get:
+      summary: Functions called by a given function
+      parameters:
+        - name: fnid
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CallInfo'
+        '400':
+          description: Missing fnid parameter
+
+  /callgraph:
+    get:
+      summary: Call graph for a function (SVG)
+      description: Renders a direct caller/callee call graph via graphviz. Requires graphviz to be installed.
+      parameters:
+        - name: fnid
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: HTML page containing an SVG call graph
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: Missing fnid parameter
+        '404':
+          description: Function not found
+
+  /projects:
+    get:
+      summary: List projects
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+
+  /project/files:
+    get:
+      summary: Files belonging to a project
+      parameters:
+        - name: pid
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/File'
+        '400':
+          description: Missing pid parameter
+
+  /rename/preview:
+    get:
+      summary: Preview identifier rename
+      description: Shows all token locations that would be changed. Does not modify files.
+      parameters:
+        - name: eid
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: newname
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eid: { type: integer }
+                  old_name: { type: string }
+                  new_name: { type: string }
+                  total_replacements: { type: integer }
+                  locations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Location'
+        '400':
+          description: Missing required parameter
+        '404':
+          description: Identifier not found
+
+  /rename/apply:
+    get:
+      summary: Apply identifier rename
+      description: Performs byte-precise rename across all writable source files. Modifies files on disk.
+      parameters:
+        - name: eid
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: newname
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  old_name: { type: string }
+                  new_name: { type: string }
+                  modified_files:
+                    type: array
+                    items:
+                      type: string
+                  total_replacements: { type: integer }
+        '400':
+          description: Missing required parameter
+        '404':
+          description: Identifier not found
+
+components:
+  parameters:
+    limit:
+      name: limit
+      in: query
+      description: Maximum number of results (default 1000).
+      schema:
+        type: integer
+        default: 1000
+    offset:
+      name: offset
+      in: query
+      description: Number of results to skip.
+      schema:
+        type: integer
+        default: 0
+
+  schemas:
+    Identifier:
+      type: object
+      description: Row from the IDS table.
+      properties:
+        EID:       { type: integer, description: Equivalence class identifier key }
+        NAME:      { type: string,  description: Identifier name }
+        READONLY:  { type: integer, description: "1 if it appears in at least one read-only file" }
+        UNDEFMACRO:       { type: integer, description: "1 if apparently an undefined macro" }
+        UNDEFEDMACRO:     { type: integer, description: "1 if the macro has been #undefed" }
+        REDEFEDSAMEMACRO: { type: integer, description: "1 if redefined with same value" }
+        REDEFEDDIFFMACRO: { type: integer, description: "1 if redefined with a different value" }
+        MACRO:     { type: integer, description: "1 if a preprocessor macro" }
+        FUNMACRO:  { type: integer, description: "1 if a function-like macro" }
+        MACROARG:  { type: integer, description: "1 if a macro argument" }
+        ORDINARY:  { type: integer, description: "1 if an ordinary identifier (variable or function)" }
+        SUETAG:    { type: integer, description: "1 if a struct/union/enum tag" }
+        SUMEMBER:  { type: integer, description: "1 if a struct/union member" }
+        LABEL:     { type: integer, description: "1 if a label" }
+        TYPEDEF:   { type: integer, description: "1 if a typedef" }
+        ENUM:      { type: integer, description: "1 if an enumeration member" }
+        YACC:      { type: integer, description: "1 if a yacc identifier" }
+        FUN:       { type: integer, description: "1 if a function name" }
+        CSCOPE:    { type: integer, description: "1 if its scope is a compilation unit (file scope)" }
+        LSCOPE:    { type: integer, description: "1 if it has linkage scope (project scope)" }
+        UNUSED:    { type: integer, description: "1 if it is not used" }
+        XFILE:     { type: integer, description: "1 if it crosses file boundaries" }
+
+    Location:
+      type: object
+      properties:
+        FID:     { type: integer }
+        FILE:    { type: string }
+        FOFFSET: { type: integer }
+        LNUM:    { type: integer }
+        RO:      { type: integer }
+
+    File:
+      type: object
+      description: Row from the FILES table.
+      properties:
+        FID:  { type: integer, description: Unique file key }
+        NAME: { type: string,  description: Full file path }
+        RO:   { type: integer, description: "1 if the file is read-only" }
+
+    FileMetrics:
+      type: object
+      description: "Row from the FILEMETRICS table. FID and PRECPP identify the row; remaining columns are metric values."
+      properties:
+        FID:    { type: integer }
+        PRECPP: { type: integer, description: "1 for pre-cpp values, 0 for post-cpp values" }
+      additionalProperties:
+        type: integer
+        description: Metric value column (e.g. NSTMT, NCHAR, NLINE, etc.)
+
+    Function:
+      type: object
+      description: Row from the FUNCTIONS table, joined with metrics and file info.
+      properties:
+        ID:         { type: integer, description: Unique function key }
+        NAME:       { type: string }
+        ISMACRO:    { type: integer, description: "1 if a function-like macro" }
+        DEFINED:    { type: integer, description: "1 if defined in the workspace" }
+        DECLARED:   { type: integer, description: "1 if declared in the workspace" }
+        FILESCOPED: { type: integer, description: "1 if file-scoped (static or macro)" }
+        FID:        { type: integer }
+        FOFFSET:    { type: integer }
+        FANIN:      { type: integer, description: Number of callers }
+        FANOUT:     { type: integer, description: Number of callees (from FUNCTIONMETRICS) }
+        CCYCL1:     { type: integer, description: McCabe cyclomatic complexity (from FUNCTIONMETRICS) }
+        FILE:       { type: string,  description: File path (joined from FILES) }
+        LNUM:       { type: integer, description: Line number (joined from LINEPOS) }
+
+    FunctionMetrics:
+      type: object
+      description: "Row from the FUNCTIONMETRICS table. FUNCTIONID and PRECPP identify the row."
+      properties:
+        FUNCTIONID: { type: integer }
+        PRECPP:     { type: integer, description: "1 for pre-cpp values, 0 for post-cpp values" }
+      additionalProperties:
+        type: number
+        description: Metric value column (e.g. FANOUT, CCYCL1, NSTMT, etc.)
+
+    CallInfo:
+      type: object
+      properties:
+        ID:      { type: integer }
+        NAME:    { type: string }
+        FID:     { type: integer }
+        FOFFSET: { type: integer }
+        FILE:    { type: string }
+
+    Project:
+      type: object
+      description: Row from the PROJECTS table.
+      properties:
+        PID:  { type: integer }
+        NAME: { type: string }
