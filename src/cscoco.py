@@ -125,10 +125,19 @@ def generate_cs(compile_commands_file, project_name):
 
     predefs = os.path.join(instdir, 'csmake-pre-defs.h')
     postdefs = os.path.join(instdir, 'csmake-post-defs.h')
+    hostdefs = os.path.join(instdir, 'host-defs.h')
+    hostincs = os.path.join(instdir, 'host-incs.h')
 
     if not os.path.exists(predefs):
         print(
             'Error: workaround headers not found.\n'
+            'Please refer to the CScout installation instructions.',
+            file=sys.stderr)
+        sys.exit(1)
+
+    if not os.path.exists(hostdefs) or not os.path.exists(hostincs):
+        print(
+            'Error: host-defs.h or host-incs.h not found.\n'
             'Please refer to the CScout installation instructions.',
             file=sys.stderr)
         sys.exit(1)
@@ -160,9 +169,15 @@ def generate_cs(compile_commands_file, project_name):
         print('#pragma clear_include')
         print(f'#pragma pushd "{directory}"')
 
-        # Pre-defs supply CScout's mock standard headers and the
-        # built-in compiler macro definitions (e.g. __GNUC__).
+        # Pre-defs supply CScout's mock standard headers.
+        # host-defs supplies the actual compiler's built-in macro
+        # definitions (e.g. __GNUC__) since csmake-pre-defs.h
+        # deliberately omits these (it targets the csmake workflow,
+        # where a real compiler provides them separately).
+        # host-incs supplies the actual system include search paths.
         print(f'#include "{predefs}"')
+        print(f'#include "{hostdefs}"')
+        print(f'#include "{hostincs}"')
 
         for d in defines:
             if '=' in d:
