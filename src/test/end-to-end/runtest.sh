@@ -39,7 +39,7 @@ echo "Merge the databases into one"
 csmerge $SHARDS make.db
 
 echo "Reconstitute the files in the merged database"
-csreconst -tckqs make.db
+csreconst -tcks make.db
 
 cd ..
 rm -rf $EXAMPLE bin include lib
