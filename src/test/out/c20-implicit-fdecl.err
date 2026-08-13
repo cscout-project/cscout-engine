@@ -3,57 +3,57 @@ Processing directory test/c
 Entering directory test/c
 Processing project Prj1
 Processing file c20-implicit-fdecl.c
-/cscout/src/test/c/c20-implicit-fdecl.c:9: warning: undeclared identifier: b
+src/test/c/c20-implicit-fdecl.c:9: warning: undeclared identifier: b
 The text leading to this warning is: [b(]
-/cscout/src/test/c/c20-implicit-fdecl.c:9: warning: assuming declaration int b(...)
+src/test/c/c20-implicit-fdecl.c:9: warning: assuming declaration int b(...)
 The text leading to this warning is: [b()]
-/cscout/src/test/c/c20-implicit-fdecl.c:10: warning: undeclared identifier: c
+src/test/c/c20-implicit-fdecl.c:10: warning: undeclared identifier: c
 The text leading to this warning is: [c(]
-/cscout/src/test/c/c20-implicit-fdecl.c:10: warning: assuming declaration int c(...)
+src/test/c/c20-implicit-fdecl.c:10: warning: assuming declaration int c(...)
 The text leading to this warning is: [c()]
-/cscout/src/test/c/c20-implicit-fdecl.c:16: error: conflicting declarations for identifier c
+src/test/c/c20-implicit-fdecl.c:16: error: conflicting declarations for identifier c
 The text leading to this error is: [static int c() {]
-/cscout/src/test/c/c20-implicit-fdecl.c:17: error: conflicting declarations for identifier d
+src/test/c/c20-implicit-fdecl.c:17: error: conflicting declarations for identifier d
 The text leading to this error is: [static int d() {]
-/cscout/src/test/c/c20-implicit-fdecl.c:20: warning: undeclared identifier: xa1
+src/test/c/c20-implicit-fdecl.c:20: warning: undeclared identifier: xa1
 The text leading to this warning is: [int xa() { xa1(]
-/cscout/src/test/c/c20-implicit-fdecl.c:20: warning: assuming declaration int xa1(...)
+src/test/c/c20-implicit-fdecl.c:20: warning: assuming declaration int xa1(...)
 The text leading to this warning is: [int xa() { xa1()]
-/cscout/src/test/c/c20-implicit-fdecl.c:20: warning: undeclared identifier: xa2
+src/test/c/c20-implicit-fdecl.c:20: warning: undeclared identifier: xa2
 The text leading to this warning is: [int xa() { xa1(); xa2(]
-/cscout/src/test/c/c20-implicit-fdecl.c:20: warning: assuming declaration int xa2(...)
+src/test/c/c20-implicit-fdecl.c:20: warning: assuming declaration int xa2(...)
 The text leading to this warning is: [int xa() { xa1(); xa2()]
-/cscout/src/test/c/c20-implicit-fdecl.c:20: warning: undeclared identifier: xa3
+src/test/c/c20-implicit-fdecl.c:20: warning: undeclared identifier: xa3
 The text leading to this warning is: [int xa() { xa1(); xa2(); xa3(]
-/cscout/src/test/c/c20-implicit-fdecl.c:20: warning: assuming declaration int xa3(...)
+src/test/c/c20-implicit-fdecl.c:20: warning: assuming declaration int xa3(...)
 The text leading to this warning is: [int xa() { xa1(); xa2(); xa3()]
 Done processing file c20-implicit-fdecl.c
 Done processing project Prj1
 Processing project Prj2
 Processing file c20-implicit-fdecl.c
-/cscout/src/test/c/c20-implicit-fdecl.c:9: warning: undeclared identifier: b
+src/test/c/c20-implicit-fdecl.c:9: warning: undeclared identifier: b
 The text leading to this warning is: [b(]
-/cscout/src/test/c/c20-implicit-fdecl.c:9: warning: assuming declaration int b(...)
+src/test/c/c20-implicit-fdecl.c:9: warning: assuming declaration int b(...)
 The text leading to this warning is: [b()]
-/cscout/src/test/c/c20-implicit-fdecl.c:10: warning: undeclared identifier: c
+src/test/c/c20-implicit-fdecl.c:10: warning: undeclared identifier: c
 The text leading to this warning is: [c(]
-/cscout/src/test/c/c20-implicit-fdecl.c:10: warning: assuming declaration int c(...)
+src/test/c/c20-implicit-fdecl.c:10: warning: assuming declaration int c(...)
 The text leading to this warning is: [c()]
-/cscout/src/test/c/c20-implicit-fdecl.c:16: error: conflicting declarations for identifier c
+src/test/c/c20-implicit-fdecl.c:16: error: conflicting declarations for identifier c
 The text leading to this error is: [static int c() {]
-/cscout/src/test/c/c20-implicit-fdecl.c:17: error: conflicting declarations for identifier d
+src/test/c/c20-implicit-fdecl.c:17: error: conflicting declarations for identifier d
 The text leading to this error is: [static int d() {]
-/cscout/src/test/c/c20-implicit-fdecl.c:20: warning: undeclared identifier: xa1
+src/test/c/c20-implicit-fdecl.c:20: warning: undeclared identifier: xa1
 The text leading to this warning is: [int xa() { xa1(]
-/cscout/src/test/c/c20-implicit-fdecl.c:20: warning: assuming declaration int xa1(...)
+src/test/c/c20-implicit-fdecl.c:20: warning: assuming declaration int xa1(...)
 The text leading to this warning is: [int xa() { xa1()]
-/cscout/src/test/c/c20-implicit-fdecl.c:20: warning: undeclared identifier: xa2
+src/test/c/c20-implicit-fdecl.c:20: warning: undeclared identifier: xa2
 The text leading to this warning is: [int xa() { xa1(); xa2(]
-/cscout/src/test/c/c20-implicit-fdecl.c:20: warning: assuming declaration int xa2(...)
+src/test/c/c20-implicit-fdecl.c:20: warning: assuming declaration int xa2(...)
 The text leading to this warning is: [int xa() { xa1(); xa2()]
-/cscout/src/test/c/c20-implicit-fdecl.c:20: warning: undeclared identifier: xa3
+src/test/c/c20-implicit-fdecl.c:20: warning: undeclared identifier: xa3
 The text leading to this warning is: [int xa() { xa1(); xa2(); xa3(]
-/cscout/src/test/c/c20-implicit-fdecl.c:20: warning: assuming declaration int xa3(...)
+src/test/c/c20-implicit-fdecl.c:20: warning: assuming declaration int xa3(...)
 The text leading to this warning is: [int xa() { xa1(); xa2(); xa3()]
 Done processing file c20-implicit-fdecl.c
 Processing file prj2.c

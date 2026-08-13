@@ -3,17 +3,17 @@ Processing directory test/c
 Entering directory test/c
 Processing project Prj1
 Processing file c44-array-enum-init.c
-/cscout/src/test/c/c44-array-enum-init.c:12: warning: too many initializers
+src/test/c/c44-array-enum-init.c:12: warning: too many initializers
 The text leading to this warning is: [int a[3] = {1, 2, 3, 4}]
-/cscout/src/test/c/c44-array-enum-init.c:15: warning: too many initializers
+src/test/c/c44-array-enum-init.c:15: warning: too many initializers
 The text leading to this warning is: [int a[2] = {[2] = 42}]
 Done processing file c44-array-enum-init.c
 Done processing project Prj1
 Processing project Prj2
 Processing file c44-array-enum-init.c
-/cscout/src/test/c/c44-array-enum-init.c:12: warning: too many initializers
+src/test/c/c44-array-enum-init.c:12: warning: too many initializers
 The text leading to this warning is: [int a[3] = {1, 2, 3, 4}]
-/cscout/src/test/c/c44-array-enum-init.c:15: warning: too many initializers
+src/test/c/c44-array-enum-init.c:15: warning: too many initializers
 The text leading to this warning is: [int a[2] = {[2] = 42}]
 Done processing file c44-array-enum-init.c
 Processing file prj2.c

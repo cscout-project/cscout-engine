@@ -1,4 +1,4 @@
-/cscout/src/test/cpp/cpp19-ansi-p93-l41.c:8: warning: Duplicate (different) macro definition of macro OL
-/cscout/src/test/cpp/cpp19-ansi-p93-l41.c:9: warning: Duplicate (different) macro definition of macro OL
-/cscout/src/test/cpp/cpp19-ansi-p93-l41.c:10: warning: Duplicate (different) macro definition of macro FL
-/cscout/src/test/cpp/cpp19-ansi-p93-l41.c:11: warning: Duplicate (different) macro definition of macro FL
+src/test/cpp/cpp19-ansi-p93-l41.c:8: warning: Duplicate (different) macro definition of macro OL
+src/test/cpp/cpp19-ansi-p93-l41.c:9: warning: Duplicate (different) macro definition of macro OL
+src/test/cpp/cpp19-ansi-p93-l41.c:10: warning: Duplicate (different) macro definition of macro FL
+src/test/cpp/cpp19-ansi-p93-l41.c:11: warning: Duplicate (different) macro definition of macro FL

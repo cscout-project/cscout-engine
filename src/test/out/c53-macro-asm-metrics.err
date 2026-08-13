@@ -3,17 +3,17 @@ Processing directory test/c
 Entering directory test/c
 Processing project Prj1
 Processing file c53-macro-asm-metrics.c
-/cscout/src/test/c/c53-macro-asm-metrics.c:22: warning: undeclared identifier: printf
+src/test/c/c53-macro-asm-metrics.c:22: warning: undeclared identifier: printf
 The text leading to this warning is: [printf(]
-/cscout/src/test/c/c53-macro-asm-metrics.c:22: warning: assuming declaration int printf(...)
+src/test/c/c53-macro-asm-metrics.c:22: warning: assuming declaration int printf(...)
 The text leading to this warning is: [printf("Calling with input = 0:\n")]
 Done processing file c53-macro-asm-metrics.c
 Done processing project Prj1
 Processing project Prj2
 Processing file c53-macro-asm-metrics.c
-/cscout/src/test/c/c53-macro-asm-metrics.c:22: warning: undeclared identifier: printf
+src/test/c/c53-macro-asm-metrics.c:22: warning: undeclared identifier: printf
 The text leading to this warning is: [printf(]
-/cscout/src/test/c/c53-macro-asm-metrics.c:22: warning: assuming declaration int printf(...)
+src/test/c/c53-macro-asm-metrics.c:22: warning: assuming declaration int printf(...)
 The text leading to this warning is: [printf("Calling with input = 0:\n")]
 Done processing file c53-macro-asm-metrics.c
 Processing file prj2.c

@@ -3,13 +3,13 @@ Processing directory test/c
 Entering directory test/c
 Processing project Prj1
 Processing file c34-idflink.c
-/cscout/src/test/c/c34-idflink.c:18: error: conflicting declarations for identifier f
+src/test/c/c34-idflink.c:18: error: conflicting declarations for identifier f
 The text leading to this error is: [static void f(void) {]
 Done processing file c34-idflink.c
 Done processing project Prj1
 Processing project Prj2
 Processing file c34-idflink.c
-/cscout/src/test/c/c34-idflink.c:18: error: conflicting declarations for identifier f
+src/test/c/c34-idflink.c:18: error: conflicting declarations for identifier f
 The text leading to this error is: [static void f(void) {]
 Done processing file c34-idflink.c
 Processing file prj2.c

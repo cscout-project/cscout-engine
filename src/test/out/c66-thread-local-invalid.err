@@ -3,37 +3,37 @@ Processing directory test/c
 Entering directory test/c
 Processing project Prj1
 Processing file c66-thread-local-invalid.c
-/cscout/src/test/c/c66-thread-local-invalid.c:2: error: conflicting linkage specifiers
+src/test/c/c66-thread-local-invalid.c:2: error: conflicting linkage specifiers
 The text leading to this error is: [extern static]
-/cscout/src/test/c/c66-thread-local-invalid.c:3: error: conflicting linkage specifiers
+src/test/c/c66-thread-local-invalid.c:3: error: conflicting linkage specifiers
 The text leading to this error is: [_Thread_local static extern]
-/cscout/src/test/c/c66-thread-local-invalid.c:7: error: conflicting storage duration specifiers
+src/test/c/c66-thread-local-invalid.c:7: error: conflicting storage duration specifiers
 The text leading to this error is: [auto _Thread_local]
-/cscout/src/test/c/c66-thread-local-invalid.c:8: error: conflicting storage duration specifiers
+src/test/c/c66-thread-local-invalid.c:8: error: conflicting storage duration specifiers
 The text leading to this error is: [register _Thread_local]
-/cscout/src/test/c/c66-thread-local-invalid.c:9: error: conflicting storage duration specifiers
+src/test/c/c66-thread-local-invalid.c:9: error: conflicting storage duration specifiers
 The text leading to this error is: [_Thread_local auto]
-/cscout/src/test/c/c66-thread-local-invalid.c:10: error: conflicting storage duration specifiers
+src/test/c/c66-thread-local-invalid.c:10: error: conflicting storage duration specifiers
 The text leading to this error is: [_Thread_local register]
-/cscout/src/test/c/c66-thread-local-invalid.c:11: error: conflicting storage duration specifiers
+src/test/c/c66-thread-local-invalid.c:11: error: conflicting storage duration specifiers
 The text leading to this error is: [_Thread_local _Thread_local]
 Done processing file c66-thread-local-invalid.c
 Done processing project Prj1
 Processing project Prj2
 Processing file c66-thread-local-invalid.c
-/cscout/src/test/c/c66-thread-local-invalid.c:2: error: conflicting linkage specifiers
+src/test/c/c66-thread-local-invalid.c:2: error: conflicting linkage specifiers
 The text leading to this error is: [extern static]
-/cscout/src/test/c/c66-thread-local-invalid.c:3: error: conflicting linkage specifiers
+src/test/c/c66-thread-local-invalid.c:3: error: conflicting linkage specifiers
 The text leading to this error is: [_Thread_local static extern]
-/cscout/src/test/c/c66-thread-local-invalid.c:7: error: conflicting storage duration specifiers
+src/test/c/c66-thread-local-invalid.c:7: error: conflicting storage duration specifiers
 The text leading to this error is: [auto _Thread_local]
-/cscout/src/test/c/c66-thread-local-invalid.c:8: error: conflicting storage duration specifiers
+src/test/c/c66-thread-local-invalid.c:8: error: conflicting storage duration specifiers
 The text leading to this error is: [register _Thread_local]
-/cscout/src/test/c/c66-thread-local-invalid.c:9: error: conflicting storage duration specifiers
+src/test/c/c66-thread-local-invalid.c:9: error: conflicting storage duration specifiers
 The text leading to this error is: [_Thread_local auto]
-/cscout/src/test/c/c66-thread-local-invalid.c:10: error: conflicting storage duration specifiers
+src/test/c/c66-thread-local-invalid.c:10: error: conflicting storage duration specifiers
 The text leading to this error is: [_Thread_local register]
-/cscout/src/test/c/c66-thread-local-invalid.c:11: error: conflicting storage duration specifiers
+src/test/c/c66-thread-local-invalid.c:11: error: conflicting storage duration specifiers
 The text leading to this error is: [_Thread_local _Thread_local]
 Done processing file c66-thread-local-invalid.c
 Processing file prj2.c
