@@ -64,7 +64,7 @@ if ($ENV{'CSMAKEFLAGS'}) {
 	@ARGV = split(/\s+/, $ENV{'CSMAKEFLAGS'});
 }
 my %options=();  # csmake options
-my $csmake_opts = "AdhkN:o:p:s:T:t:";
+my $csmake_opts = "Ad:hkN:o:p:s:T:t:";
 # Parse options from CSMAKEFLAGS
 getopts($csmake_opts, \%options);
 
@@ -86,13 +86,13 @@ if (defined $index) {
 }
 
 if (defined $options{d}) {
-	$debug = 1;
+	$debug = $options{d};
 }
 
 if (defined $options{h}) {
 print <<HELP;
 usage: csmake [ [-A] [-d] [-k] [-o output] [-s cs_files_directory] [-T temporary_directory ] [-t time_file] [-N rules_file] [-h] -- ] [make(1) options]
-    -d                Run in debug mode (it also keeps spy directory in place).
+    -d N              Run in debug mode (it also keeps spy directory in place).
     -h                Print help message.
     -k                Keep temporary directory in place.
     -o file           Specify output file; (default make.cs, - for stdout)
@@ -648,6 +648,7 @@ if ($#cfiles >= 0) {
 $origline = "gcc " . join(' ', @ARGV);
 $origline =~ s/\n/ /g;
 
+print STDERR "Create compilation rules\n" if ($debug > 1);
 # Output compilation rules
 for $cfile (@cfiles) {
 	$rules .= "BEGIN COMPILE\n";
@@ -671,6 +672,7 @@ for $cfile (@cfiles) {
 		# program runs by using the current rules file offset. This
 		# will be always increasing across all programs.
 		my $ofile = "/$tmpdir/csmake-ofile-" . tell(RULES) . '.o';
+		print STDERR "Add implicit output file $ofile\n" if ($debug > 1);
 		push(@implicit_ofiles, $ofile);
 		$rules .= "OUTOBJ $ofile\n";
 	}
