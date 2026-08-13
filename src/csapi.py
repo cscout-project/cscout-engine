@@ -79,8 +79,11 @@ SAVED_QUERIES_IDS = {
     "unused_file": {"where": "i.UNUSED = 1 AND i.CSCOPE = 1 AND i.READONLY = 0 AND i.MACROARG = 0"},
     "unused_macros": {"where": "i.UNUSED = 1 AND i.MACRO = 1 AND i.READONLY = 0 AND i.MACROARG = 0"},
     "file_spanning": {"where": "i.READONLY = 0 AND i.EID IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
-    "static_vars": {"where": "i.READONLY = 0 AND i.ORDINARY = 1 AND i.LSCOPE = 1 AND i.NAME != 'main' AND i.EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
+    "static_vars": {"where": "i.READONLY = 0 AND i.FUN = 0 AND i.ORDINARY = 1 AND i.LSCOPE = 1 AND i.NAME != 'main' AND i.EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
     "static_funs": {"where": "i.FUN = 1 AND i.READONLY = 0 AND i.ORDINARY = 1 AND i.LSCOPE = 1 AND i.NAME != 'main' AND i.EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
+    "unused": {"where": "i.UNUSED = 1 AND i.READONLY = 0"},
+    "should_be_static": {"where": "i.READONLY = 0 AND i.ORDINARY = 1 AND i.LSCOPE = 1 AND i.NAME != 'main' AND i.EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
+    "functions": {"where": "i.FUN = 1"}
 }
 
 SAVED_QUERIES_FUNCTIONS = {
