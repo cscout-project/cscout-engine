@@ -56,10 +56,10 @@ Test the reconstitution of files in a CScout database
 EXAMPLES
 
 Test all files providing a summary.c:
-  test-reconst -tckqs result.db
+  csreconst -tckqs result.db
 
 Reconstitute file.c:
-  test-reconst -f file.c result.db
+  csreconst -f file.c result.db
 EOF
   exit 1
 }
