@@ -170,7 +170,7 @@ EOF
 fix_nl()
 {
   tr -d "\n\r" |
-  perl -pe 's/\\u0000d\\u0000a/\n/g;s/\\u0000a/\n/g'
+  perl -pe 's/\\u0000d\\u0000a/\n/g;s/\\u0000a/\n/g;s/\\u0000c/\f/g'
 }
 
 # Test reconstitution of all files
