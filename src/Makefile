@@ -221,6 +221,7 @@ test:
 	./runtest.sh $(TEST_FLAGS)
 	cd test/csmake && ./runtest.sh
 	make -C csmerge test
+	cd test/end-to-end && ./runtest.sh
 
 tags:
 	ctags *.cpp *.h *.y
