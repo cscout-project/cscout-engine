@@ -591,6 +591,8 @@ if ($bailout) {
 my @incs;
 my @defs;
 
+my $tmpdir = tempdir('gcc-out-XXXX', DIR => $ENV{CSCOUT_SPY_TMPDIR});
+
 if ($#cfiles >= 0) {
 	push(@ARGV2, $ENV{CSCOUT_SPY_TMPDIR} . '/empty.c');
 	# Escape shell metacharacters
@@ -600,7 +602,6 @@ if ($#cfiles >= 0) {
 	$cmdline = $real . ' ' . join(' ', @ARGV2);
 	print STDERR "Get gcc incs/defs for C files @cfiles by running $cmdline\n" if ($debug);
 
-	my $tmpdir = tempdir('gcc-out-XXXX', DIR => $ENV{CSCOUT_SPY_TMPDIR});
 	my $gcc_out = "$tmpdir/out.txt";
 	print STDERR "Redirecting to $gcc_out\n" if ($debug > 2);
 
@@ -640,7 +641,6 @@ if ($#cfiles >= 0) {
 	close(IN);
 
 	unlink($gcc_out);
-	rmdir($tmpdir);
 
 	print STDERR "Parsed incs=[@incs] defs=[@defs]\n" if ($debug > 2);
 }
@@ -712,7 +712,6 @@ if (!$compile && !$depwrite && ($#ofiles >= 0 || $#implicit_ofiles >= 0 || $#afi
 }
 
 # Finally, execute the real gcc keeping time information
-my $tmpdir = tempdir('time-out-XXXX', DIR => $ENV{CSCOUT_SPY_TMPDIR});
 my $time_out = "$tmpdir/out.txt";
 $rules .= "COMMENT COMPILE $real " . join(' ', @ARGV) . "\n";
 
