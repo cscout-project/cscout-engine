@@ -33,7 +33,7 @@ CC = /opt/pure/purify/purify cc
 CC = cc
 
 YACC = bison -y
-YACC = yacc
+#YACC = yacc
 YFLAGS = -d
 
 OFILES = b.o main.o parse.o proctab.o tran.o lib.o run.o lex.o
