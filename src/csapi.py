@@ -51,24 +51,24 @@ SAVED_QUERIES_FILES = {
     "readonly": {"where": "f.RO = 1"},
     "with_unused": {
         "join": "JOIN TOKENS t ON t.FID = f.FID JOIN IDS i ON i.EID = t.EID",
-        "where": "i.UNUSED = 1 AND i.READONLY = 0",
+        "where": "i.UNUSED = 1 AND i.READONLY = 0 AND i.MACROARG = 0",
         "distinct": True
     },
     "no_statements": {
         "join": "JOIN FILEMETRICS fm ON fm.FID = f.FID",
-        "where": "fm.PRECPP = 0 AND f.NAME LIKE '%.c' AND (fm.NSTMT = 0 OR fm.NSTMT IS NULL)"
+        "where": "f.RO = 0 AND fm.PRECPP = 0 AND f.NAME LIKE '%.c' AND (fm.NSTMT = 0 OR fm.NSTMT IS NULL)"
     },
     "unprocessed": {
         "join": "JOIN FILEMETRICS fm ON fm.FID = f.FID",
-        "where": "fm.PRECPP = 0 AND fm.NULINE > 0"
+        "where": "f.RO = 0 AND fm.PRECPP = 0 AND fm.NULINE > 0"
     },
     "with_strings": {
         "join": "JOIN FILEMETRICS fm ON fm.FID = f.FID",
-        "where": "fm.PRECPP = 0 AND fm.NSTRING > 0"
+        "where": "f.RO = 0 AND fm.PRECPP = 0 AND fm.NSTRING > 0"
     },
     "h_with_includes": {
         "join": "JOIN FILEMETRICS fm ON fm.FID = f.FID",
-        "where": "f.NAME LIKE '%.h' AND fm.PRECPP = 1 AND fm.NINCFILE > 0"
+        "where": "f.RO = 0 AND f.NAME LIKE '%.h' AND fm.PRECPP = 1 AND fm.NINCFILE > 0"
     }
 }
 
@@ -78,10 +78,10 @@ SAVED_QUERIES_IDS = {
     "unused_project": {"where": "i.UNUSED = 1 AND i.LSCOPE = 1 AND i.READONLY = 0 AND i.MACROARG = 0"},
     "unused_file": {"where": "i.UNUSED = 1 AND i.CSCOPE = 1 AND i.READONLY = 0 AND i.MACROARG = 0"},
     "unused_macros": {"where": "i.UNUSED = 1 AND i.MACRO = 1 AND i.READONLY = 0 AND i.MACROARG = 0"},
-    "file_spanning": {"where": "i.READONLY = 0 AND i.EID IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
+    "file_spanning": {"where": "i.READONLY = 0 AND i.MACROARG = 0 AND i.EID IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
     "static_vars": {"where": "i.READONLY = 0 AND i.FUN = 0 AND i.ORDINARY = 1 AND i.LSCOPE = 1 AND i.NAME != 'main' AND i.EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
     "static_funs": {"where": "i.FUN = 1 AND i.READONLY = 0 AND i.ORDINARY = 1 AND i.LSCOPE = 1 AND i.NAME != 'main' AND i.EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
-    "unused": {"where": "i.UNUSED = 1 AND i.READONLY = 0"},
+    "unused": {"where": "i.UNUSED = 1 AND i.READONLY = 0 AND i.MACROARG = 0"},
     "should_be_static": {"where": "i.READONLY = 0 AND i.ORDINARY = 1 AND i.LSCOPE = 1 AND i.NAME != 'main' AND i.EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
     "functions": {"where": "i.FUN = 1"}
 }
