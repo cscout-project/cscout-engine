@@ -25,13 +25,19 @@ cd $EXAMPLE
 echo "Create make.cs by spying on the make process"
 csmake
 
+echo "Process the single CScout file"
+cscout -s sqlite make.cs | sqlite3 make.db
+
+echo "Reconstitute the files in the database"
+csreconst -tcks make.db
+
 echo "Split the file into four CScout shards"
 cssplit -s $SHARDS make.cs
 
 echo "Process the CScout files (normally this is done in parallel)"
 rm -f file-*.db
 
-for i in *.cs ; do
+for i in file-*.cs ; do
   cscout -s sqlite $i | sqlite3 $(basename $i .cs).db
 done
 
