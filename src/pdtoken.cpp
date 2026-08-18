@@ -489,9 +489,6 @@ process_defined()
 			i = find_if(i, operand.end(), non_space);
 		}
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-		// False-positive GCC 14.2.0-19 -Warray-bounds warning here.
 		if (i == operand.end() || i->get_code() != IDENTIFIER) {
 			/*
 			 * @error
@@ -502,7 +499,6 @@ process_defined()
 			Error::error(E_ERR, "No identifier following defined operator");
 			return false;
 		}
-#pragma GCC diagnostic pop
 
 		auto arg = i;
 
