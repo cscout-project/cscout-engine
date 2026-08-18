@@ -49,6 +49,10 @@ typedef stack<bool> stackbool;
  */
 typedef map<Tokid, MCall *> mapMacroBody;
 
+// Remove and return the operand beginning at position.
+PtokenSequence gather_operand(PtokenSequence& tokens,
+    PtokenSequence::iterator position, bool requires_parenthesis);
+
 // A macro definition
 class Macro {
 public:
@@ -56,8 +60,8 @@ public:
 	// Get more tokens or only use the supplied ones
 	enum class TokenSourceOption { get_more, use_supplied };
 
-	// Process the defined() function or skip its processing
-	enum class DefinedHandlingOption { process, skip };
+	// Process preprocessor operators or protect their operands from expansion
+	enum class OperatorHandling { process, skip };
 
 	// Type of macro being substituted
 	enum class MacroType { function_like, object_like };
@@ -109,7 +113,7 @@ public:
 	// Print it (for debugging)
 	friend ostream& operator<<(ostream& o,const Macro &m);
 
-	friend PtokenSequence macro_expand(PtokenSequence ts, Macro::TokenSourceOption token_source, Macro::DefinedHandlingOption defined_handling, Macro::CalledContext context);
+	friend PtokenSequence macro_expand(PtokenSequence ts, Macro::TokenSourceOption token_source, Macro::OperatorHandling operator_handling, Macro::CalledContext context);
 	// Name-based comparison for the small set of visible macros
 	// constructed in expand_macro.
 	bool operator<(const Macro& other) const {

@@ -303,63 +303,65 @@ gather_function_arg(dequePtoken& tokens, const Macro *collector)
 }
 
 /*
- * Remove from tokens and return the elements comprising the arguments to the defined
- * operator, * such as "defined X" or "defined(X)"
- * This is the rule when processing #if #elif expressions
+ * Remove and return a preprocessor operator's operand, keeping it out of the
+ * ordinary macro-expansion pass.  defined also permits an unparenthesized
+ * identifier; header availability operators require parentheses.
  */
-static PtokenSequence
-gather_defined_operator(PtokenSequence& tokens)
+PtokenSequence
+gather_operand(PtokenSequence& tokens, PtokenSequence::iterator position,
+    bool requires_parenthesis)
 {
 	PtokenSequence r;
+	int nesting = 0;
 
-	// Skip leading space
-	while (!tokens.empty() && tokens.front().get_code() == SPACE) {
-		r.push_back(tokens.front());
-		tokens.pop_front();
+	// Preserve whitespace between the operator and its operand.
+	while (position != tokens.end() && position->get_code() == SPACE) {
+		auto current = position++;
+		r.splice(r.end(), tokens, current);
 	}
-	if (tokens.empty())
-		goto error;
-	switch (tokens.front().get_code()) {
-	case IDENTIFIER:
-		// defined X form
-		r.push_back(tokens.front());
-		tokens.pop_front();
-		return (r);
-	case '(':
-		// defined (X) form
-		r.push_back(tokens.front());
-		tokens.pop_front();
-		// Skip space
-		while (!tokens.empty() && tokens.front().get_code() == SPACE) {
-			r.push_back(tokens.front());
-			tokens.pop_front();
+
+	if (!requires_parenthesis) {
+		if (position == tokens.end())
+			return r;
+		if (position->get_code() != '(') {
+			auto current = position++;
+			r.splice(r.end(), tokens, current);
+			return r;
 		}
-		if (tokens.empty() || tokens.front().get_code() != IDENTIFIER)
-			goto error;
-		r.push_back(tokens.front());
-		tokens.pop_front();
-		// Skip space
-		while (!tokens.empty() && tokens.front().get_code() == SPACE) {
-			r.push_back(tokens.front());
-			tokens.pop_front();
-		}
-		if (tokens.empty() || tokens.front().get_code() != ')')
-			goto error;
-		r.push_back(tokens.front());
-		tokens.pop_front();
-		return (r);
-	default:
-	error:
+	}
+
+	if (position == tokens.end() || position->get_code() != '(') {
 		/*
 		 * @error
-		 * The preprocessor operator
-		 * <code>defined<code> was not used as
-		 * <code>defined(<code><em>identifier</em><code>)</code> or
-		 * <code>defined<code> <em>identifier</em>.
+		 * A parenthesized preprocessor operator was not followed by an
+		 * opening bracket.
 		 */
-		Error::error(E_ERR, "Invalid use of the defined preprocessor operator");
-		return (r);
+		Error::error(E_ERR, "Missing open bracket after preprocessor operator");
+		return r;
 	}
+
+	// Gather the complete operand, allowing parentheses produced by macros.
+	do {
+		Ptoken t(*position);
+		auto current = position++;
+		r.splice(r.end(), tokens, current);
+		if (t.get_code() == '(')
+			nesting++;
+		else if (t.get_code() == ')')
+			nesting--;
+	} while (position != tokens.end() && nesting != 0);
+
+	if (nesting != 0) {
+		/*
+		 * @error
+		 * The end of a preprocessor expression was reached before the
+		 * closing bracket of an operator operand.
+		 */
+		Error::error(E_ERR, "Missing close bracket in preprocessor operator");
+	}
+
+	// Return the protected tokens for later operand-specific expansion.
+	return r;
 }
 
 // Return an arg iterator if token is a formal argument
@@ -508,7 +510,8 @@ struct MacroExpansionMetricCapture {
  * a recursive version.)
  * This function goes through sequence ts token by token and expands macros.
  * If token_source is get_more, then more tokens can be fetched.
- * If defined_handling is skip then the defined() keyword is not processed
+ * If operator_handling is skip, preprocessor operator operands are protected
+ * from the ordinary macro expansion pass.
  * If context denotes preprocessor then is_cpp_const attribute is set
  * for identifiers.
  *
@@ -529,7 +532,7 @@ struct MacroExpansionMetricCapture {
 PtokenSequence
 macro_expand(PtokenSequence ts,
     Macro::TokenSourceOption token_source,
-    Macro::DefinedHandlingOption defined_handling,
+    Macro::OperatorHandling operator_handling,
     Macro::CalledContext context)
 {
 	PtokenSequence r;	// Return value
@@ -547,11 +550,15 @@ macro_expand(PtokenSequence ts,
 			continue;
 		}
 
-		if (defined_handling == Macro::DefinedHandlingOption::skip && head.get_code() == IDENTIFIER && head.get_val() == "defined") {
-			// Skip the arguments of the defined operator, if needed
-			PtokenSequence da(gather_defined_operator(ts));
+		if (operator_handling == Macro::OperatorHandling::skip
+		    && head.get_code() == IDENTIFIER
+		    && (head.get_val() == "defined"
+		        || head.get_val() == "__has_include"
+		        || head.get_val() == "__has_include_next")) {
+			PtokenSequence operand(gather_operand(ts, ts.begin(),
+			    head.get_val() != "defined"));
 			r.push_back(head);
-			r.splice(r.end(), da);
+			r.splice(r.end(), operand);
 			continue;
 		}
 
@@ -606,7 +613,7 @@ macro_expand(PtokenSequence ts,
 			Token::unify((*mi).second.name_token, head);
 			HideSet hs(head.get_hideset());
 			hs.insert(m.get_name_token());
-			PtokenSequence s(subst(m, mapArgval(), hs, defined_handling == Macro::DefinedHandlingOption::skip, Macro::MacroType::object_like, context));
+			PtokenSequence s(subst(m, mapArgval(), hs, operator_handling == Macro::OperatorHandling::skip, Macro::MacroType::object_like, context));
 			ts.splice(ts.begin(), s);
 		} else if (fill_in(ts, token_source == Macro::TokenSourceOption::get_more, removed_spaces) && ts.front().get_code() == '(') {
 			// Application of a function-like macro
@@ -625,7 +632,7 @@ macro_expand(PtokenSequence ts,
 				close.get_hideset().begin(), close.get_hideset().end(),
 				inserter(hs, hs.begin()));
 			hs.insert(m.get_name_token());
-			PtokenSequence s(subst(m, args, hs, defined_handling == Macro::DefinedHandlingOption::skip, Macro::MacroType::function_like, context));
+			PtokenSequence s(subst(m, args, hs, operator_handling == Macro::OperatorHandling::skip, Macro::MacroType::function_like, context));
 			ts.splice(ts.begin(), s);
 		} else {
 			// Function-like macro name lacking a (
@@ -794,7 +801,7 @@ subst(const Macro &m, const mapArgval &args, HideSet hs, bool skip_defined, Macr
 			map<string, ExpandedArg>::const_iterator pi = expanded_args.find(ai->first);
 			if (pi == expanded_args.end()) {
 				MacroExpansionMetricCapture capture;
-				PtokenSequence expanded(macro_expand(ai->second,  Macro::TokenSourceOption::use_supplied, skip_defined ? Macro::DefinedHandlingOption::skip : Macro::DefinedHandlingOption::process, context));
+				PtokenSequence expanded(macro_expand(ai->second,  Macro::TokenSourceOption::use_supplied, skip_defined ? Macro::OperatorHandling::skip : Macro::OperatorHandling::process, context));
 				capture.arg.value = expanded;
 				pi = expanded_args.emplace(ai->first, capture.arg).first;
 			} else {
