@@ -81,7 +81,8 @@ The * <code>defined</code> operator was not followed
 by an identifier or an open bracket.<p><li> <code>Empty #include directive</code><br>
 A
 <code>#include</code>
-directive was not followed by a filename specification.<p><li> <code>End of file in character literal</code><br>
+directive was not followed by a filename specification.<p><li> <code>Empty __has_include operand</code><br>
+A header availability operator contained no header name.<p><li> <code>End of file in character literal</code><br>
 The end of file was reached while
 processing a character literal:
 a single quote was never closed.<p><li> <code>End of file in string literal</code><br>
@@ -91,7 +92,9 @@ The end of the line was reached while
 processing a string.<p><li> <code>Explicit element tag without no %union in effect</code><br>
 The yacc $<tag>n syntax was used
 to specify an element of the %union
-but no union was defined.<p><li> <code>Illegal access to a structure or union member</code><br>
+but no union was defined.<p><li> <code>Extra tokens in __has_include operand</code><br>
+Tokens followed the header name in a header availability operand.<p><li> <code>Extra tokens in defined operator</code><br>
+Tokens followed the operand of a defined operator.<p><li> <code>Illegal access to a structure or union member</code><br>
 The code attempted to access a member of a structure that
 is past the number of declared members of that structure.
 Only the first member is accessible without a designator
@@ -116,7 +119,8 @@ was used as an initialization target or for obtaining
 a member of it.<p><li> <code>Invalid #include syntax</code><br>
 A
 <code>#include</code>
-directive was not followed by a legal filename specification.<p><li> <code>Invalid application of basic type, storage class, or type specifier</code><br>
+directive was not followed by a legal filename specification.<p><li> <code>Invalid __has_include operand</code><br>
+A header availability operand did not form a header name.<p><li> <code>Invalid application of basic type, storage class, or type specifier</code><br>
 A basic type, storage class or type specified was specified in
 an invalid underlying object.<p><li> <code>Invalid character escape sequence</code><br>
 A character escape sequence <code>\c</code> can not be
@@ -138,11 +142,7 @@ An attempt was made to specify a type on a basic object that
 did not allow this specification, because that specification
 was already given.<p><li> <code>Invalid type specification</code><br>
 An attempt was made to specify a type on an object that
-did not allow this specification.<p><li> <code>Invalid use of the defined preprocessor operator</code><br>
-The preprocessor operator
-<code>defined<code> was not used as
-<code>defined(<code><em>identifier</em><code>)</code> or
-<code>defined<code> <em>identifier</em>.<p><li> <code>Invalid vararg specification</code><br>
+did not allow this specification.<p><li> <code>Invalid vararg specification</code><br>
 The ellipsis vararg specification of a
 <code>#define</code> macro
 must be the last formal argument.<p><li> <code>Label  ...  already defined</code><br>
@@ -151,10 +151,16 @@ than once in a given function.<p><li> <code>Macro [ ... ]: EOF while reading fun
 The end of file was reached while
 gathering a macro's arguments.<p><li> <code>Macro [ ... ]: close bracket expected for function-like macro</code><br>
 The arguments to a function-like macro did
-not terminate with a closing bracket.<p><li> <code>Missing close bracket in defined operator</code><br>
+not terminate with a closing bracket.<p><li> <code>Missing close bracket in __has_include operator</code><br>
+A header availability operator lacked its closing bracket.<p><li> <code>Missing close bracket in defined operator</code><br>
 The identifier of a
 <code>defined</code> operator was
-not followed by a closing bracket.<p><li> <code>Modulo division by zero in #if expression</code><br>
+not followed by a closing bracket.<p><li> <code>Missing close bracket in preprocessor operator</code><br>
+The end of a preprocessor expression was reached before the
+closing bracket of an operator operand.<p><li> <code>Missing open bracket after __has_include operator</code><br>
+A header availability operator lacked its opening bracket.<p><li> <code>Missing open bracket after preprocessor operator</code><br>
+A parenthesized preprocessor operator was not followed by an
+opening bracket.<p><li> <code>Modulo division by zero in #if expression</code><br>
 A <code>#if</code> expression
 divided by zero in a modulo
 expression.<p><li> <code>Multiple storage classes in type declaration</code><br>
