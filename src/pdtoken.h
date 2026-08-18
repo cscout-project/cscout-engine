@@ -76,7 +76,8 @@ private:
 
 	static void process_directive();	// Handle a cpp directive
 	static void eat_to_eol();		// Consume input including \n
-	static void process_include(bool next);	// Handle a #include
+	// Handle #include; next selects #include_next path-search semantics.
+	static void process_include(bool next);
 	static void process_define(bool ishard);// Handle a #define
 	static void process_undef();		// Handle a #undef
 	static void process_if();		// Handle #if
@@ -107,6 +108,8 @@ private:
 	// Get the next expanded token
 	void getnext_expand();
 public:
+	// next means search after the current file's include-path entry.
+	static bool can_find_include(const Ptoken& f, bool next);
 	// Constructors
 	Pdtoken(const Ptoken &pt) : Ptoken(pt) {};
 	Pdtoken() {};

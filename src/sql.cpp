@@ -67,6 +67,7 @@ Sqlite::escape(char c)
 	switch (c) {
 	case '\'': return "''";
 	case '\n': return "\\u0000a";
+	case '\f': return "\\u0000c";
 	case '\r': return "\\u0000d";
 	default:
 		str[0] = c;

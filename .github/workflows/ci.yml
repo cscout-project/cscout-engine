@@ -41,7 +41,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install make
+          brew install make flock byacc
 
       - name: Verify installations
         run: |

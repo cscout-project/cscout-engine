@@ -73,7 +73,7 @@ show_error()
 # - Lines denoting post-processing as relative paths may differ
 remove_cwd()
 {
-  sed -e "/Post-processing/d;s|[^ ]*$(cd ../.. ; /bin/pwd)||" "$@"
+  sed -e "/Post-processing/d;s|[^ ]*$(cd .. ; /bin/pwd)/||" "$@"
 }
 
 # End a test (arguments directory, name)

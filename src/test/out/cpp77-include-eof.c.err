@@ -1,3 +1,3 @@
-/cscout/src/test/cpp/cpp77-include-eof.h:1: warning: Included file does not end with a newline.
-/cscout/src/test/cpp/cpp77-include-eof.c:2: warning: Included file does not end with a newline.
+src/test/cpp/cpp77-include-eof.h:1: warning: Included file does not end with a newline.
+src/test/cpp/cpp77-include-eof.c:2: warning: Included file does not end with a newline.
 The text leading to this warning is: [[AFTER_INCLUDE]]

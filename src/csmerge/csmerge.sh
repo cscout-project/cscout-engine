@@ -15,7 +15,7 @@ LOG_FILE=csmerge.log
 # Log the specified message with a timestamp
 log()
 {
-  echo "$(date -Is) $1" >>$LOG_FILE
+  echo "$(date '+%Y-%m-%dT%H:%M:%S') $1" >>$LOG_FILE
 }
 
 # Create an empty database onto which to consolidate the parts
@@ -97,8 +97,8 @@ merge_onto()
   # Obtain the unique identifier for the database being merged,
   # for example, /tmp/csmerge.o48j/temp-6.db or file-0007.db.
   local dbid=$(
-    echo $source |
-      awk '{ match($0, /(file|temp)-([0-9]+)\.db$/, m); print m[2] + 0 }'
+    basename $source |
+      sed -E 's/^(file|temp)-([0-9]+)\.db$/\2/'
     )
 
   log "DB $dbid: BEGIN merge onto $dest $source"
@@ -137,14 +137,15 @@ merge_onto()
        # Disable all durability guarantees
        sqllite_config
 
+       # Attach database to be merged.
+       echo "ATTACH DATABASE '$source' AS adb;"
+
        # Configure script as needed
        sed "
-         # Attach database to be merged.
-         1i\
-         ATTACH DATABASE '$source' AS adb;
-
          # Replace hard-coded database id 5 used for testing.
-         s/\\<5\\>/$dbid/g
+         s/\\([- ]\\)5/\\1xyzzy$dbid/g
+         # Used to avoid having \10001 as a back-reference
+         s/xyzzy//g
 
          # Replace ././ with $TEMP_DIR/.
          s|\./\./|$TEMP_DIR/|g
@@ -170,6 +171,7 @@ merge()
 
   if [ "${#files[@]}" -eq 2 ]; then
     output="$TEMP_DIR/temp-$(get_dbid).db"
+
     create_empty "$output"
     merge_onto "$output" "${files[0]}"
     merge_onto "$output" "${files[1]}"
@@ -180,12 +182,12 @@ merge()
   midpoint=$((${#files[@]} / 2))
 
   local left=("${files[@]:0:midpoint}")
-  local left_output=$(mktemp $TEMP_DIR/XXXXX.txt)
+  local left_output=$(mktemp $TEMP_DIR/out.XXXXXX)
   merge "${left[@]}" >$left_output &
   pid_left=$!
 
   local right=("${files[@]:midpoint}")
-  local right_output=$(mktemp $TEMP_DIR/XXXXX.txt)
+  local right_output=$(mktemp $TEMP_DIR/out.XXXXXX)
   merge "${right[@]}" >$right_output &
   pid_right=$!
 
@@ -275,7 +277,7 @@ while getopts "kl:T:" opt; do
 done
 
 # Create temporary directory in specified location, or $TMPDIR, or /tmp.
-TEMP_DIR=$(mktemp -d --tmpdir=${TEMP_DIR_LOCATION:-} csmerge.XXXX)
+TEMP_DIR=$(mktemp -d --tmpdir=${TEMP_DIR_LOCATION:-} csmerge.XXXXXX)
 export TEMP_DIR
 
 DBID_FILE="$TEMP_DIR/dbid.txt"

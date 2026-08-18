@@ -185,7 +185,7 @@ again:
 			break;
 		}
 		expand.push_front(t);
-		expand = macro_expand(expand, Macro::TokenSourceOption::get_more, Macro::DefinedHandlingOption::process, Macro::CalledContext::process_c);
+		expand = macro_expand(expand, Macro::TokenSourceOption::get_more, Macro::OperatorHandling::process, Macro::CalledContext::process_c);
 		goto expand_get;
 		[[fallthrough]];
 	default:
@@ -363,10 +363,102 @@ early_defined_end_error()
 }
 
 /*
- * Process all instanced of the defined() operator, substituting 1 or 0
- * depending on whether the identifier is defined or not.
+ * Process all instances of the preprocessor operators, such as defined()
+ * and __has_include(), substituting 1 or 0 depending on whether the operator
+ * evaluates to true.
  * Return false on error.
  */
+/* Replace __has_include(...) and __has_include_next(...) by 1 or 0. */
+static bool
+process_has_include()
+{
+	auto start = eval_tokens.begin();
+	while (start != eval_tokens.end()) {
+		start = find_if(start, eval_tokens.end(), [](const Ptoken& t) {
+			return t.get_code() == IDENTIFIER
+			    && (t.get_val() == "__has_include"
+			        || t.get_val() == "__has_include_next");
+		});
+		if (start == eval_tokens.end())
+			return true;
+
+		bool next_include = start->get_val() == "__has_include_next";
+		PtokenSequence gathered(gather_operand(eval_tokens, std::next(start), true));
+		auto open = find_if(gathered.begin(), gathered.end(),
+		    [](const Ptoken& t) { return !t.is_space(); });
+		if (open == gathered.end() || open->get_code() != '(') {
+			/*
+			 * @error
+			 * A header availability operator lacked its opening bracket.
+			 */
+			Error::error(E_ERR, "Missing open bracket after __has_include operator");
+			return false;
+		}
+
+		auto close = std::prev(gathered.end());
+		if (close->get_code() != ')') {
+			/*
+			 * @error
+			 * A header availability operator lacked its closing bracket.
+			 */
+			Error::error(E_ERR, "Missing close bracket in __has_include operator");
+			return false;
+		}
+
+		PtokenSequence operand;
+		operand.insert(operand.end(), std::next(open), close);
+		operand = macro_expand(operand, Macro::TokenSourceOption::use_supplied,
+		    Macro::OperatorHandling::process,
+		    Macro::CalledContext::process_include);
+		operand.erase(operand.begin(), find_if(operand.begin(), operand.end(),
+		    [](const Ptoken& t) { return !t.is_space(); }));
+		while (!operand.empty() && operand.back().is_space())
+			operand.pop_back();
+		if (operand.empty()) {
+			/*
+			 * @error
+			 * A header availability operator contained no header name.
+			 */
+			Error::error(E_ERR, "Empty __has_include operand");
+			return false;
+		}
+
+		Tchar::clear();
+		for (const auto& token : operand)
+			Tchar::push_input(token);
+		Tchar::rewind_input();
+		Pltoken::set_context(cpp_include);
+		Pltoken header;
+		header.getnext<Tchar>();
+		if (header.get_code() != PATHFNAME && header.get_code() != ABSFNAME) {
+			/*
+			 * @error
+			 * A header availability operand did not form a header name.
+			 */
+			Error::error(E_ERR, "Invalid __has_include operand");
+			return false;
+		}
+
+		Pltoken trailing;
+		trailing.getnext_nospc<Tchar>();
+		if (trailing.get_code() != EOF) {
+			/*
+			 * @error
+			 * Tokens followed the header name in a header availability operand.
+			 */
+			Error::error(E_ERR, "Extra tokens in __has_include operand");
+			return false;
+		}
+
+		bool found = Pdtoken::can_find_include(header, next_include);
+		auto after = eval_tokens.erase(start);
+		start = eval_tokens.insert(after, Ptoken(PP_NUMBER, found ? "1" : "0"));
+		++start;
+	}
+	return true;
+}
+
+/* Replace defined identifier and defined(identifier) by 1 or 0. */
 static bool
 process_defined()
 {
@@ -380,30 +472,24 @@ process_defined()
 		if (start == eval_tokens.end())
 			break;
 
-		// Check for following bracket; set arg to next
-		// non-space token.
-	     	bool need_bracket = false;
-		auto i = next(start);
-		if (i == eval_tokens.end()) {
+		PtokenSequence operand(gather_operand(eval_tokens, next(start), false));
+		auto i = find_if(operand.begin(), operand.end(), non_space);
+		if (i == operand.end()) {
 			early_defined_end_error();
 			return false;
 		}
 
-		i = find_if(i, eval_tokens.end(), non_space);
-		if (i != eval_tokens.end() && i->get_code() == '(') {
-			need_bracket = true;
+		bool need_bracket = i->get_code() == '(';
+		if (need_bracket) {
 			i = next(i);
-			if (i == eval_tokens.end()) {
+			if (i == operand.end()) {
 				early_defined_end_error();
 				return false;
 			}
-			i = find_if(i, eval_tokens.end(), non_space);
+			i = find_if(i, operand.end(), non_space);
 		}
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-		// False-positive GCC 14.2.0-19 -Warray-bounds warning here.
-		if (i == eval_tokens.end() || i->get_code() != IDENTIFIER) {
+		if (i == operand.end() || i->get_code() != IDENTIFIER) {
 			/*
 			 * @error
 			 * The
@@ -413,7 +499,6 @@ process_defined()
 			Error::error(E_ERR, "No identifier following defined operator");
 			return false;
 		}
-#pragma GCC diagnostic pop
 
 		auto arg = i;
 
@@ -421,12 +506,12 @@ process_defined()
 		PtokenSequence::iterator last;
 		if (need_bracket) {
 			i = next(i);
-			if (i == eval_tokens.end()) {
+			if (i == operand.end()) {
 				early_defined_end_error();
 				return false;
 			}
-			last = find_if(i, eval_tokens.end(), non_space);
-			if (last == eval_tokens.end() || last->get_code() != ')') {
+			last = find_if(i, operand.end(), non_space);
+			if (last == operand.end() || last->get_code() != ')') {
 					/*
 					 * @error
 					 * The identifier of a
@@ -439,6 +524,14 @@ process_defined()
 		} else
 			last = arg;
 		last = next(last);
+		if (find_if(last, operand.end(), non_space) != operand.end()) {
+			/*
+			 * @error
+			 * Tokens followed the operand of a defined operator.
+			 */
+			Error::error(E_ERR, "Extra tokens in defined operator");
+			return false;
+		}
 
 		// Mark the identifier as used as a preprocessor constant
 		arg->set_ec_attribute(is_cpp_const);
@@ -451,9 +544,9 @@ process_defined()
 			Token::unify(mi->second.get_name_token(), *arg);
 		else
 			Pdtoken::create_undefined_macro(*arg);
-		last = eval_tokens.erase(start, last);
-		last = eval_tokens.insert(last, Ptoken(PP_NUMBER, Pdtoken::macro_is_defined(mi) ? "1" : "0"));
-		start = last;
+		auto after = eval_tokens.erase(start);
+		start = eval_tokens.insert(after,
+		    Ptoken(PP_NUMBER, Pdtoken::macro_is_defined(mi) ? "1" : "0"));
 	}
 
 	if (DP()) {
@@ -461,6 +554,13 @@ process_defined()
 		copy(eval_tokens.begin(), eval_tokens.end(), ostream_iterator<Ptoken>(cout));
 	}
 	return true;
+}
+
+/* Process each supported preprocessor operator in its operator-specific pass. */
+static bool
+process_operators()
+{
+	return process_has_include() && process_defined();
 }
 
 /*
@@ -492,15 +592,15 @@ eval()
 	}
 
 	// Macro replace, skipping identifiers for defined operator
-	eval_tokens = macro_expand(eval_tokens, Macro::TokenSourceOption::use_supplied, Macro::DefinedHandlingOption::skip, Macro::CalledContext::process_if);
+	eval_tokens = macro_expand(eval_tokens, Macro::TokenSourceOption::use_supplied, Macro::OperatorHandling::skip, Macro::CalledContext::process_if);
 
 	if (DP()) {
 		cout << "Tokens after macro replace:\n";
 		copy(eval_tokens.begin(), eval_tokens.end(), ostream_iterator<Ptoken>(cout));
 	}
 
-	// Process defined operator
-	if (!process_defined())
+	// Process defined and header availability operators.
+	if (!process_operators())
 		return 1;
 	// Change remaining identifiers to 0
 	for (auto i = eval_tokens.begin();
@@ -689,6 +789,34 @@ can_open(const string& s)
 }
 
 /*
+ * Test whether a header would be found, without opening it as input.
+ * When next is true, implement __has_include_next by starting after the
+ * include-path entry from which the current file was found.
+ */
+bool
+Pdtoken::can_find_include(const Ptoken& f, bool next)
+{
+	if (is_absolute_filename(f.get_val()))
+		return can_open(f.get_val());
+
+	if (f.get_code() == ABSFNAME && !next
+	    && can_open(Fchar::get_dir() + "/" + f.get_val()))
+		return true;
+
+	vectorstring::size_type begin = 0;
+	if (next) {
+		// Skip through the include-path entry that supplied this file.
+		int offset = Filedetails::get_ipath_offset(Fchar::get_fileid());
+		if (offset >= 0)
+			begin = static_cast<vectorstring::size_type>(offset) + 1;
+	}
+	for (vectorstring::size_type i = begin; i < include_path.size(); i++)
+		if (can_open(include_path[i] + "/" + f.get_val()))
+			return true;
+	return false;
+}
+
+/*
  * When next is true we start scanning the include path from the directory
  * following the one in which the current file was found (gcc extension).
  * See: http://www.delorie.com/gnu/docs/gcc/cpp_11.html (Wrapper headers)
@@ -724,7 +852,7 @@ Pdtoken::process_include(bool next)
 	if (f.get_code() != PATHFNAME && f.get_code() != ABSFNAME) {
 		// Need to macro process
 		// 1. Macro replace
-		tokens = macro_expand(tokens, Macro::TokenSourceOption::use_supplied, Macro::DefinedHandlingOption::process, Macro::CalledContext::process_include);
+		tokens = macro_expand(tokens, Macro::TokenSourceOption::use_supplied, Macro::OperatorHandling::process, Macro::CalledContext::process_include);
 		if (DP()) {
 			cout << "Replaced after macro :\n";
 			copy(tokens.begin(), tokens.end(), ostream_iterator<Ptoken>(cout));

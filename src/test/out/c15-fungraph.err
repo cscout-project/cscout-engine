@@ -3,25 +3,25 @@ Processing directory test/c
 Entering directory test/c
 Processing project Prj1
 Processing file c15-fungraph.c
-/cscout/src/test/c/c15-fungraph.c:9: warning: undeclared identifier: function3
+src/test/c/c15-fungraph.c:9: warning: undeclared identifier: function3
 The text leading to this warning is: [function3(]
-/cscout/src/test/c/c15-fungraph.c:9: warning: assuming declaration int function3(...)
+src/test/c/c15-fungraph.c:9: warning: assuming declaration int function3(...)
 The text leading to this warning is: [function3()]
-/cscout/src/test/c/c15-fungraph.c:10: warning: undeclared identifier: printf
+src/test/c/c15-fungraph.c:10: warning: undeclared identifier: printf
 The text leading to this warning is: [printf(]
-/cscout/src/test/c/c15-fungraph.c:10: warning: assuming declaration int printf(...)
+src/test/c/c15-fungraph.c:10: warning: assuming declaration int printf(...)
 The text leading to this warning is: [printf("Hello")]
 Done processing file c15-fungraph.c
 Done processing project Prj1
 Processing project Prj2
 Processing file c15-fungraph.c
-/cscout/src/test/c/c15-fungraph.c:9: warning: undeclared identifier: function3
+src/test/c/c15-fungraph.c:9: warning: undeclared identifier: function3
 The text leading to this warning is: [function3(]
-/cscout/src/test/c/c15-fungraph.c:9: warning: assuming declaration int function3(...)
+src/test/c/c15-fungraph.c:9: warning: assuming declaration int function3(...)
 The text leading to this warning is: [function3()]
-/cscout/src/test/c/c15-fungraph.c:10: warning: undeclared identifier: printf
+src/test/c/c15-fungraph.c:10: warning: undeclared identifier: printf
 The text leading to this warning is: [printf(]
-/cscout/src/test/c/c15-fungraph.c:10: warning: assuming declaration int printf(...)
+src/test/c/c15-fungraph.c:10: warning: assuming declaration int printf(...)
 The text leading to this warning is: [printf("Hello")]
 Done processing file c15-fungraph.c
 Processing file prj2.c

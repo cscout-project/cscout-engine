@@ -1,4 +1,4 @@
-/cscout/src/test/cpp/cpp23-iferr.c:2: error: Unbalanced #endif
-/cscout/src/test/cpp/cpp23-iferr.c:4: error: Unbalanced #else
-/cscout/src/test/cpp/cpp23-iferr.c:6: error: Unbalanced #elif
-/cscout/src/test/cpp/cpp23-iferr.c:8: error: EOF while processing #if directive
+src/test/cpp/cpp23-iferr.c:2: error: Unbalanced #endif
+src/test/cpp/cpp23-iferr.c:4: error: Unbalanced #else
+src/test/cpp/cpp23-iferr.c:6: error: Unbalanced #elif
+src/test/cpp/cpp23-iferr.c:8: error: EOF while processing #if directive

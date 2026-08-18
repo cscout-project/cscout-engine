@@ -56,10 +56,10 @@ Test the reconstitution of files in a CScout database
 EXAMPLES
 
 Test all files providing a summary.c:
-  test-reconst -tckqs result.db
+  csreconst -tckqs result.db
 
 Reconstitute file.c:
-  test-reconst -f file.c result.db
+  csreconst -f file.c result.db
 EOF
   exit 1
 }
@@ -170,7 +170,7 @@ EOF
 fix_nl()
 {
   tr -d "\n\r" |
-  perl -pe 's/\\u0000d\\u0000a/\n/g;s/\\u0000a/\n/g'
+  perl -pe 's/\\u0000d\\u0000a/\n/g;s/\\u0000a/\n/g;s/\\u0000c/\f/g'
 }
 
 # Test reconstitution of all files

@@ -3,12 +3,12 @@ Processing directory test/c
 Entering directory test/c
 Processing project Prj1
 Processing file c83-redef.c
-/cscout/src/test/c/c83-redef.c:5: warning: Duplicate (different) macro definition of macro defined_different
+src/test/c/c83-redef.c:5: warning: Duplicate (different) macro definition of macro defined_different
 Done processing file c83-redef.c
 Done processing project Prj1
 Processing project Prj2
 Processing file c83-redef.c
-/cscout/src/test/c/c83-redef.c:5: warning: Duplicate (different) macro definition of macro defined_different
+src/test/c/c83-redef.c:5: warning: Duplicate (different) macro definition of macro defined_different
 Done processing file c83-redef.c
 Processing file prj2.c
 Done processing file prj2.c

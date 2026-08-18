@@ -243,4 +243,3 @@ extern int __builtin___vsprintf_chk(char *, int, unsigned int, const char *, voi
 #define __seg_fs
 #define __seg_gs
 #define __PRETTY_FUNCTION__ "UNKNOWN"
-#pragma define_immutable __restrict

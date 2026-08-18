@@ -3,13 +3,13 @@ Processing directory test/c
 Entering directory test/c
 Processing project Prj1
 Processing file c19-initializers.c
-/cscout/src/test/c/c19-initializers.c:20: warning: too many initializers
+src/test/c/c19-initializers.c:20: warning: too many initializers
 The text leading to this warning is: [p2 = &(struct point){.y = 14, 18}]
 Done processing file c19-initializers.c
 Done processing project Prj1
 Processing project Prj2
 Processing file c19-initializers.c
-/cscout/src/test/c/c19-initializers.c:20: warning: too many initializers
+src/test/c/c19-initializers.c:20: warning: too many initializers
 The text leading to this warning is: [p2 = &(struct point){.y = 14, 18}]
 Done processing file c19-initializers.c
 Processing file prj2.c

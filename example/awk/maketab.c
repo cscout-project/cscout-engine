@@ -102,7 +102,7 @@ struct xx
 	{ CALL, "call", "call" },
 	{ ARG, "arg", "arg" },
 	{ VARNF, "getnf", "NF" },
-	{ GETLINE, "getline", "getline" },
+	{ GETLINE, "getlinex", "getline" },
 	{ 0, "", "" },
 };
 

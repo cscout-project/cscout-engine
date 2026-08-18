@@ -3,13 +3,13 @@
 # Create an obfuscated version of the awk source code
 #
 
+set -eu
+
 rm -rf awk
 mkdir awk
 cp ../example/awk/* awk/
 cd awk
 rm makefile
-mv ytabc.bak ytab.c
-mv ytabh.bak ytab.h
 sed "/LC_MESSAGES/d" ../../example/awk/main.c >main.c
 cat <<\EOF >extern.h
 #include <stdio.h>

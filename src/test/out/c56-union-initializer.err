@@ -3,17 +3,17 @@ Processing directory test/c
 Entering directory test/c
 Processing project Prj1
 Processing file c56-union-initializer.c
-/cscout/src/test/c/c56-union-initializer.c:25: warning: too many initializers
+src/test/c/c56-union-initializer.c:25: warning: too many initializers
 The text leading to this warning is: [struct su su_a_err[3] = {1, 2, 3, 4}]
-/cscout/src/test/c/c56-union-initializer.c:31: warning: too many initializers
+src/test/c/c56-union-initializer.c:31: warning: too many initializers
 The text leading to this warning is: [struct ss ss_a_err[3] = {1, 2, 3, 4, 5, 6, 7}]
 Done processing file c56-union-initializer.c
 Done processing project Prj1
 Processing project Prj2
 Processing file c56-union-initializer.c
-/cscout/src/test/c/c56-union-initializer.c:25: warning: too many initializers
+src/test/c/c56-union-initializer.c:25: warning: too many initializers
 The text leading to this warning is: [struct su su_a_err[3] = {1, 2, 3, 4}]
-/cscout/src/test/c/c56-union-initializer.c:31: warning: too many initializers
+src/test/c/c56-union-initializer.c:31: warning: too many initializers
 The text leading to this warning is: [struct ss ss_a_err[3] = {1, 2, 3, 4, 5, 6, 7}]
 Done processing file c56-union-initializer.c
 Processing file prj2.c
