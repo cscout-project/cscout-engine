@@ -47,25 +47,38 @@ class MissingParameterError(ValueError):
     pass
 
 SAVED_QUERIES_FILES = {
+    # Matches cscout.cpp:2020 (xfilequery.html?writable=1)
     "writable": {"where": "f.RO = 0"},
+    # Matches cscout.cpp:2019 (xfilequery.html?readonly=1)
     "readonly": {"where": "f.RO = 1"},
-    "with_unused": {
+    # Matches cscout.cpp:2021 (xiquery.html?writable=1&a<is_lscope>=1&unused=1&match=L&qf=1)
+    "with_unused_project": {
         "join": "JOIN TOKENS t ON t.FID = f.FID JOIN IDS i ON i.EID = t.EID",
-        "where": "i.UNUSED = 1 AND i.READONLY = 0 AND i.MACROARG = 0",
+        "where": "f.RO = 0 AND i.UNUSED = 1 AND i.LSCOPE = 1 AND i.READONLY = 0 AND i.MACROARG = 0",
         "distinct": True
     },
+    # Matches cscout.cpp:2022 (xiquery.html?writable=1&a<is_cscope>=1&unused=1&match=L&qf=1)
+    "with_unused_file": {
+        "join": "JOIN TOKENS t ON t.FID = f.FID JOIN IDS i ON i.EID = t.EID",
+        "where": "f.RO = 0 AND i.UNUSED = 1 AND i.CSCOPE = 1 AND i.READONLY = 0 AND i.MACROARG = 0",
+        "distinct": True
+    },
+    # Matches cscout.cpp:2023 (c[em_nstmt]=0, fre=\.[cC]$)
     "no_statements": {
         "join": "JOIN FILEMETRICS fm ON fm.FID = f.FID",
-        "where": "f.RO = 0 AND fm.PRECPP = 0 AND f.NAME LIKE '%.c' AND (fm.NSTMT = 0 OR fm.NSTMT IS NULL)"
+        "where": "f.RO = 0 AND f.NAME LIKE '%.c' AND fm.PRECPP = 1 AND fm.NSTMT = 0"
     },
+    # Matches cscout.cpp:2024 (c[em_nuline]>0)
     "unprocessed": {
         "join": "JOIN FILEMETRICS fm ON fm.FID = f.FID",
-        "where": "f.RO = 0 AND fm.PRECPP = 0 AND fm.NULINE > 0"
+        "where": "f.RO = 0 AND fm.PRECPP = 1 AND fm.NULINE > 0"
     },
+    # Matches cscout.cpp:2025 (c[em_nstring]>0)
     "with_strings": {
         "join": "JOIN FILEMETRICS fm ON fm.FID = f.FID",
-        "where": "f.RO = 0 AND fm.PRECPP = 0 AND fm.NSTRING > 0"
+        "where": "f.RO = 0 AND fm.PRECPP = 1 AND fm.NSTRING > 0"
     },
+    # Matches cscout.cpp:2026 (c[em_nincfile]>0, fre=\.[hH]$)
     "h_with_includes": {
         "join": "JOIN FILEMETRICS fm ON fm.FID = f.FID",
         "where": "f.RO = 0 AND f.NAME LIKE '%.h' AND fm.PRECPP = 1 AND fm.NINCFILE > 0"
@@ -73,24 +86,49 @@ SAVED_QUERIES_FILES = {
 }
 
 SAVED_QUERIES_IDS = {
-    "readonly": {"where": "i.READONLY = 1 AND i.MACROARG = 0"},
-    "writable": {"where": "i.READONLY = 0 AND i.MACROARG = 0"},
+    # Matches cscout.cpp:2068 (xiquery.html?a<is_readonly>=1&match=Y&qi=1)
+    "readonly": {"where": "i.READONLY = 1"},
+    # Matches cscout.cpp:2069 (xiquery.html?writable=1&match=Y&qi=1)
+    "writable": {"where": "i.READONLY = 0"},
+    # Matches cscout.cpp:2071 (xiquery.html?writable=1&a1=1&unused=1&match=L&qi=1)
     "unused_project": {"where": "i.UNUSED = 1 AND i.LSCOPE = 1 AND i.READONLY = 0 AND i.MACROARG = 0"},
+    # Matches cscout.cpp:2072 (xiquery.html?writable=1&a0=1&unused=1&match=L&qi=1)
     "unused_file": {"where": "i.UNUSED = 1 AND i.CSCOPE = 1 AND i.READONLY = 0 AND i.MACROARG = 0"},
-    "unused_macros": {"where": "i.UNUSED = 1 AND i.MACRO = 1 AND i.READONLY = 0 AND i.MACROARG = 0"},
-    "file_spanning": {"where": "i.READONLY = 0 AND i.MACROARG = 0 AND i.EID IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
-    "static_vars": {"where": "i.READONLY = 0 AND i.FUN = 0 AND i.ORDINARY = 1 AND i.LSCOPE = 1 AND i.NAME != 'main' AND i.EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
-    "static_funs": {"where": "i.FUN = 1 AND i.READONLY = 0 AND i.ORDINARY = 1 AND i.LSCOPE = 1 AND i.NAME != 'main' AND i.EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
+    # Matches cscout.cpp:2073 (xiquery.html?writable=1&a14=1&unused=1&match=L&qi=1)
+    "unused_macros": {"where": "i.UNUSED = 1 AND i.MACRO = 1 AND i.READONLY = 0"},
+    # Matches cscout.cpp:2070 (xiquery.html?writable=1&xfile=1&match=L&qi=1)
+    "file_spanning": {"where": "i.READONLY = 0 AND i.EID IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
+    # Matches cscout.cpp:2075 (match=T, a2=1, a1=1) and idquery.cpp:278.
+    "static_vars": {"where": "i.READONLY = 0 AND i.UNUSED = 0 AND i.ORDINARY = 1 AND i.LSCOPE = 1 AND i.FUN = 0"
+        " AND i.SUETAG = 0 AND i.SUMEMBER = 0 AND i.LABEL = 0 AND i.MACRO = 0 AND i.UNDEFMACRO = 0"
+        " AND i.UNDEFEDMACRO = 0 AND i.REDEFEDSAMEMACRO = 0 AND i.REDEFEDDIFFMACRO = 0 AND i.MACROARG = 0"
+        " AND i.CSCOPE = 0 AND i.TYPEDEF = 0 AND i.ENUM = 0 AND i.YACC = 0"
+        " AND i.NAME != 'main' AND i.EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
+    # Matches cscout.cpp:2076 (match=T, a2=1, a1=1, a5=1) and idquery.cpp:278, 
+    "static_funs": {"where": "i.READONLY = 0 AND i.UNUSED = 0 AND i.ORDINARY = 1 AND i.LSCOPE = 1 AND i.FUN = 1"
+        " AND i.SUETAG = 0 AND i.SUMEMBER = 0 AND i.LABEL = 0 AND i.MACRO = 0 AND i.UNDEFMACRO = 0"
+        " AND i.UNDEFEDMACRO = 0 AND i.REDEFEDSAMEMACRO = 0 AND i.REDEFEDDIFFMACRO = 0 AND i.MACROARG = 0"
+        " AND i.CSCOPE = 0 AND i.TYPEDEF = 0 AND i.ENUM = 0 AND i.YACC = 0"
+        " AND i.NAME != 'main' AND i.EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
+    # Internal query mapping to Eclass::is_unused() in eclass.cpp:186
     "unused": {"where": "i.UNUSED = 1 AND i.READONLY = 0 AND i.MACROARG = 0"},
-    "should_be_static": {"where": "i.READONLY = 0 AND i.ORDINARY = 1 AND i.LSCOPE = 1 AND i.NAME != 'main' AND i.EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
+    "should_be_static": {"where": "i.READONLY = 0 AND i.UNUSED = 0 AND i.ORDINARY = 1 AND i.LSCOPE = 1"
+        " AND i.SUETAG = 0 AND i.SUMEMBER = 0 AND i.LABEL = 0 AND i.MACRO = 0 AND i.UNDEFMACRO = 0"
+        " AND i.UNDEFEDMACRO = 0 AND i.REDEFEDSAMEMACRO = 0 AND i.REDEFEDDIFFMACRO = 0 AND i.MACROARG = 0"
+        " AND i.CSCOPE = 0 AND i.TYPEDEF = 0 AND i.ENUM = 0 AND i.YACC = 0"
+        " AND i.NAME != 'main' AND i.EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)"},
     "functions": {"where": "i.FUN = 1"}
 }
 
 SAVED_QUERIES_FUNCTIONS = {
-    "project_scoped": {"where": "f.FILESCOPED = 0 AND f.ISMACRO = 0"},
-    "file_scoped": {"where": "f.FILESCOPED = 1 AND f.ISMACRO = 0"},
-    "not_called": {"where": "f.FANIN = 0 AND f.ISMACRO = 0"},
-    "called_once": {"where": "f.FANIN = 1 AND f.ISMACRO = 0"},
+    # Matches cscout.cpp:2050 (xfunquery.html?writable=1&pscope=1)
+    "project_scoped": {"where": "fi.RO = 0 AND f.FILESCOPED = 0"},
+    # Matches cscout.cpp:2051 (xfunquery.html?writable=1&fscope=1)
+    "file_scoped": {"where": "fi.RO = 0 AND f.FILESCOPED = 1"},
+    # Matches cscout.cpp:2052 (xfunquery.html?writable=1&ncallers=0)
+    "not_called": {"where": "fi.RO = 0 AND f.FANIN = 0"},
+    # Matches cscout.cpp:2053 (xfunquery.html?writable=1&ncallers=1)
+    "called_once": {"where": "fi.RO = 0 AND f.FANIN = 1"},
 }
 
 
