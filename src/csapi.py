@@ -331,6 +331,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.handle_callgraph(conn, qs)
             elif path == "/identifiers/counts":
                 self.handle_identifiers_counts(conn, qs)
+            elif path == "/identifiers/stats":
+                self.handle_identifiers_stats(conn, qs)
             elif path == "/functions/counts":
                 self.handle_functions_counts(conn, qs)
             elif path == "/functions/byname":
@@ -442,6 +444,76 @@ class Handler(BaseHTTPRequestHandler):
 
     def handle_identifier(self, conn, qs):
         """Handle /identifier requests."""
+    def handle_identifiers_stats(self, conn, qs):
+        """Handle /identifiers/stats, returns counts and name-length stats per identifier class.
+
+        TODO: I'm not filling in "post-cpp total ids" here.
+        CScout only works that number out in memory while walking the
+        expanded stream (see process_queued_identifiers and
+        IdMetricsSummary::add_post_cpp_id in metrics.cpp), it never
+        gets written to the sqlite export. To do this:
+          1. In CScout core, export a table of post-cpp identifier
+             occurrences the same way TOKENS already exports pre-cpp
+             ones, most likely from inside process_queued_identifiers
+             since that's the only place the expanded stream is walked.
+          2. Regenerate the .cs / .db files for any project tested
+             against.
+          3. Join that table in here and add the column.
+        """
+        ensure_index(conn, "TOKENS", ["EID"])
+
+        # Distinct count and name-length stats, straight from IDS, one
+        # row per READONLY value, one CASE WHEN per identifier class.
+        select_parts = ["READONLY", "COUNT(*) AS all_distinct",
+                         "AVG(LENGTH(NAME)) AS all_avglen",
+                         "MIN(LENGTH(NAME)) AS all_minlen",
+                         "MAX(LENGTH(NAME)) AS all_maxlen"]
+        for _, col in IDENTIFIER_CLASSES:
+            length_expr = f"CASE WHEN {col}=1 THEN LENGTH(NAME) END"
+            select_parts.append(f"SUM(CASE WHEN {col}=1 THEN 1 ELSE 0 END) AS {col}_distinct")
+            select_parts.append(f"AVG({length_expr}) AS {col}_avglen")
+            select_parts.append(f"MIN({length_expr}) AS {col}_minlen")
+            select_parts.append(f"MAX({length_expr}) AS {col}_maxlen")
+        ids_rows = {
+            r["READONLY"]: r for r in conn.execute(
+                f"SELECT {', '.join(select_parts)} FROM IDS GROUP BY READONLY"
+            ).fetchall()
+        }
+
+        # Pre-cpp occurrence totals, one row per occurrence in TOKENS.
+        precpp_parts = ["i.READONLY AS READONLY", "COUNT(*) AS all_precpp"]
+        for _, col in IDENTIFIER_CLASSES:
+            precpp_parts.append(f"SUM(CASE WHEN i.{col}=1 THEN 1 ELSE 0 END) AS {col}_precpp")
+        precpp_rows = {
+            r["READONLY"]: r for r in conn.execute(
+                f"SELECT {', '.join(precpp_parts)} FROM TOKENS t "
+                f"JOIN IDS i ON i.EID = t.EID GROUP BY i.READONLY"
+            ).fetchall()
+        }
+
+        def build_group(ro):
+            idr, pcr = ids_rows.get(ro), precpp_rows.get(ro)
+
+            def stat_row(label, col):
+                prefix = col or "all"
+                return {
+                    "class": label,
+                    "pre_cpp_total": (pcr[f"{prefix}_precpp"] if pcr else 0) or 0,
+                    "distinct": (idr[f"{prefix}_distinct"] if idr else 0) or 0,
+                    "avg_len": idr[f"{prefix}_avglen"] if idr else None,
+                    "min_len": idr[f"{prefix}_minlen"] if idr else None,
+                    "max_len": idr[f"{prefix}_maxlen"] if idr else None,
+                }
+
+            rows = [stat_row("All identifiers", None)]
+            rows += [stat_row(label, col) for label, col in IDENTIFIER_CLASSES]
+            return rows
+
+        self.send_json({
+            "writable": build_group(0),
+            "readonly": build_group(1),
+        })
+
         ensure_index(conn, "TOKENS", ["EID"])
         ensure_index(conn, "LINEPOS", ["FID", "FOFFSET"])
         eid = get_required_int_param(qs, "eid")
