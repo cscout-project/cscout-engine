@@ -319,6 +319,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.handle_rename_preview(conn, qs)
             elif path == "/rename/apply":
                 self.handle_rename_apply(conn, qs)
+            elif path == "/identifier/resolve":
+                self.handle_identifier_resolve(conn, qs)
             elif path == "/identifier/detail":
                 self.handle_identifier_detail(conn, qs)
             elif path == "/filemetrics/aggregate":
@@ -445,8 +447,6 @@ class Handler(BaseHTTPRequestHandler):
             "static_funs": static_row["static_funs"] or 0,
         })
 
-    def handle_identifier(self, conn, qs):
-        """Handle /identifier requests."""
     def handle_identifiers_stats(self, conn, qs):
         """Handle /identifiers/stats, returns counts and name-length stats per identifier class.
 
@@ -517,6 +517,8 @@ class Handler(BaseHTTPRequestHandler):
             "readonly": build_group(1),
         })
 
+    def handle_identifier(self, conn, qs):
+        """Handle /identifier requests."""
         ensure_index(conn, "TOKENS", ["EID"])
         ensure_index(conn, "LINEPOS", ["FID", "FOFFSET"])
         eid = get_required_int_param(qs, "eid")
@@ -547,8 +549,6 @@ class Handler(BaseHTTPRequestHandler):
             "locations": rows_to_list(tokens),
         })
 
-    def handle_files(self, conn, qs):
-        """Handle /files requests with optional filters.
     def handle_identifier_resolve(self, conn, qs):
         """Handle /identifier/resolve requests.
         
@@ -580,16 +580,18 @@ class Handler(BaseHTTPRequestHandler):
             
         self.send_json(dict(row))
 
+    def handle_files(self, conn, qs):
+        """Handle /files requests with optional filters.
 
         Parameters mirror the CScout web file query (xfilequery.html):
-        writable=1       — writable files only (RO=0)
-        ro=1             — read-only files only (RO=1)
-        fre=<regex>      — filter filenames matching SQL LIKE pattern
-        has_unused=1     — files containing unused writable identifiers
-        no_statements=1  — writable .c files with no statements (NSTMT=0)
-        unprocessed=1    — files with unprocessed lines (NULINE>0)
-        has_strings=1    — files containing string literals (NSTRING>0)
-        h_with_includes=1 — writable .h files with #include directives
+        writable=1        writable files only (RO=0)
+        ro=1              read-only files only (RO=1)
+        fre=<regex>       filter filenames matching SQL LIKE pattern
+        has_unused=1      files containing unused writable identifiers
+        no_statements=1   writable .c files with no statements (NSTMT=0)
+        unprocessed=1     files with unprocessed lines (NULINE>0)
+        has_strings=1     files containing string literals (NSTRING>0)
+        h_with_includes=1 writable .h files with #include directives
         """
         query = get_param(qs, "query")
 
@@ -695,7 +697,6 @@ class Handler(BaseHTTPRequestHandler):
         ]
         conditions, params = build_where_clause(qs, filters)
 
-        conditions.append("f.DEFINED = 1")
         distinct = False
 
         if query and query in SAVED_QUERIES_FUNCTIONS:
@@ -715,10 +716,12 @@ class Handler(BaseHTTPRequestHandler):
         rows = conn.execute(
             f"""SELECT {distinct_str}f.ID, f.NAME, f.ISMACRO, f.DEFINED, f.DECLARED,
                       f.FILESCOPED, f.FID, f.FOFFSET, f.FANIN,
-                      fm.FANOUT, fm.CCYCL1, fi.NAME AS FILE, l.LNUM
+                      fm.FANOUT, fm.CCYCL1, fmr.CCYCL1 AS CCYCL1_PRE, fi.NAME AS FILE, l.LNUM
                FROM FUNCTIONS f
                LEFT JOIN FUNCTIONMETRICS fm
                       ON fm.FUNCTIONID = f.ID AND fm.PRECPP = 0
+               LEFT JOIN FUNCTIONMETRICS fmr
+                      ON fmr.FUNCTIONID = f.ID AND fmr.PRECPP = 1
                LEFT JOIN FILES fi ON fi.FID = f.FID
                LEFT JOIN LINEPOS l
                       ON l.FID = f.FID AND l.FOFFSET = (
@@ -729,20 +732,20 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(rows_to_list(rows))
 
     def handle_functions_counts(self, conn, qs):
-        """Handle /functions/counts — returns COUNT(*) per sidebar category.
+        """Handle /functions/counts, returns COUNT(*) per sidebar category.
 
         Single SQL query using CASE WHEN to avoid multiple round-trips.
-        Only counts DEFINED=1 functions (matching what the sidebar shows).
+        Counts every row in FUNCTIONS, declared-only as well as defined.
         """
         row = conn.execute("""
             SELECT
               COUNT(*) AS all_fns,
-              SUM(CASE WHEN FILESCOPED=0 AND ISMACRO=0 THEN 1 ELSE 0 END) AS project_scoped,
-              SUM(CASE WHEN FILESCOPED=1 AND ISMACRO=0 THEN 1 ELSE 0 END) AS file_scoped,
-              SUM(CASE WHEN FANIN=0 AND ISMACRO=0 THEN 1 ELSE 0 END) AS not_called,
-              SUM(CASE WHEN FANIN=1 AND ISMACRO=0 THEN 1 ELSE 0 END) AS called_once
-            FROM FUNCTIONS
-            WHERE DEFINED=1
+              SUM(CASE WHEN fi.RO=0 AND fn.FILESCOPED=0 THEN 1 ELSE 0 END) AS project_scoped,
+              SUM(CASE WHEN fi.RO=0 AND fn.FILESCOPED=1 THEN 1 ELSE 0 END) AS file_scoped,
+              SUM(CASE WHEN fi.RO=0 AND fn.FANIN=0 THEN 1 ELSE 0 END) AS not_called,
+              SUM(CASE WHEN fi.RO=0 AND fn.FANIN=1 THEN 1 ELSE 0 END) AS called_once
+            FROM FUNCTIONS fn
+            LEFT JOIN FILES fi ON fi.FID = fn.FID
         """).fetchone()
         self.send_json({
             "all": row["all_fns"],
@@ -753,20 +756,20 @@ class Handler(BaseHTTPRequestHandler):
         })
 
     def handle_functions_byname(self, conn, qs):
-        """Handle /functions/byname — return a single function row by name.
+        """Handle /functions/byname, return a single function row by name.
 
-        Used by the hover provider to fetch complexity metrics for one function
-        without downloading the entire function list (which was 10,000+ rows).
-        Returns the first matching defined function with its metrics.
+        Looks up one function directly, instead of downloading the
+        whole function list just to find one entry.
         """
         ensure_index(conn, "LINEPOS", ["FID", "FOFFSET"])
         name = get_required_param(qs, "name")
         row = conn.execute(
             """SELECT f.ID, f.NAME, f.ISMACRO, f.DEFINED, f.DECLARED, f.FILESCOPED,
-                      f.FID, f.FOFFSET, f.FANIN, fm.FANOUT, fm.CCYCL1,
+                      f.FID, f.FOFFSET, f.FANIN, fm.FANOUT, fm.CCYCL1, fmr.CCYCL1 AS CCYCL1_PRE,
                       fi.NAME AS FILE, l.LNUM
                FROM FUNCTIONS f
                LEFT JOIN FUNCTIONMETRICS fm ON fm.FUNCTIONID = f.ID AND fm.PRECPP = 0
+               LEFT JOIN FUNCTIONMETRICS fmr ON fmr.FUNCTIONID = f.ID AND fmr.PRECPP = 1
                LEFT JOIN FILES fi ON fi.FID = f.FID
                LEFT JOIN LINEPOS l ON l.FID = f.FID AND l.FOFFSET = (
                    SELECT MAX(FOFFSET) FROM LINEPOS WHERE FID = f.FID AND FOFFSET <= f.FOFFSET)
@@ -779,7 +782,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(dict(row))
 
     def handle_files_counts(self, conn, qs):
-        """Handle /files/counts — returns COUNT(*) per file sidebar category."""
+        """Handle /files/counts, returns COUNT(*) per file sidebar category."""
         rows = conn.execute("""
             SELECT 'all' AS name, COUNT(*) AS value FROM FILES
             UNION
@@ -787,23 +790,27 @@ class Handler(BaseHTTPRequestHandler):
             UNION
             SELECT 'writable', COUNT(*) FROM FILES WHERE RO=0
             UNION
-            SELECT 'with_unused', COUNT(DISTINCT f.FID) FROM FILES f
+            SELECT 'with_unused_project', COUNT(DISTINCT f.FID) FROM FILES f
                 JOIN TOKENS t ON t.FID = f.FID
                 JOIN IDS i ON i.EID = t.EID
-                WHERE f.RO=0 AND i.UNUSED=1 AND i.READONLY=0
+                WHERE f.RO=0 AND i.UNUSED=1 AND i.LSCOPE=1 AND i.READONLY=0 AND i.MACROARG=0
+            UNION
+            SELECT 'with_unused_file', COUNT(DISTINCT f.FID) FROM FILES f
+                JOIN TOKENS t ON t.FID = f.FID
+                JOIN IDS i ON i.EID = t.EID
+                WHERE f.RO=0 AND i.UNUSED=1 AND i.CSCOPE=1 AND i.READONLY=0 AND i.MACROARG=0
             UNION
             SELECT 'no_statements', COUNT(*) FROM FILES f
                 JOIN FILEMETRICS fm ON fm.FID = f.FID
-                WHERE f.RO=0 AND f.NAME LIKE '%.c' AND fm.PRECPP=0
-                AND (fm.NSTMT=0 OR fm.NSTMT IS NULL)
+                WHERE f.RO=0 AND f.NAME LIKE '%.c' AND fm.PRECPP=1 AND fm.NSTMT=0
             UNION
             SELECT 'unprocessed', COUNT(*) FROM FILES f
                 JOIN FILEMETRICS fm ON fm.FID = f.FID
-                WHERE f.RO=0 AND fm.PRECPP=0 AND fm.NULINE > 0
+                WHERE f.RO=0 AND fm.PRECPP=1 AND fm.NULINE > 0
             UNION
             SELECT 'with_strings', COUNT(*) FROM FILES f
                 JOIN FILEMETRICS fm ON fm.FID = f.FID
-                WHERE f.RO=0 AND fm.PRECPP=0 AND fm.NSTRING > 0
+                WHERE f.RO=0 AND fm.PRECPP=1 AND fm.NSTRING > 0
             UNION
             SELECT 'h_with_includes', COUNT(DISTINCT f.FID) FROM FILES f
                 JOIN FILEMETRICS fm ON fm.FID = f.FID
@@ -1076,15 +1083,18 @@ class Handler(BaseHTTPRequestHandler):
 
         fn_name = fn_row["NAME"]
 
+        show_all = qs.get("all", ["0"])[0] == "1"
+        scope_filter = "" if show_all else " AND f.FILESCOPED = 0"
+
         callers = conn.execute(
-            """SELECT f.ID, f.NAME FROM FCALLS fc
+            f"""SELECT f.ID, f.NAME FROM FCALLS fc
             JOIN FUNCTIONS f ON fc.SOURCEID = f.ID
-            WHERE fc.DESTID = ?""",
+            WHERE fc.DESTID = ?{scope_filter}""",
             (fnid,)).fetchall()
         callees = conn.execute(
-            """SELECT f.ID, f.NAME FROM FCALLS fc
+            f"""SELECT f.ID, f.NAME FROM FCALLS fc
             JOIN FUNCTIONS f ON fc.DESTID = f.ID
-            WHERE fc.SOURCEID = ?""",
+            WHERE fc.SOURCEID = ?{scope_filter}""",
             (fnid,)).fetchall()
 
         dot_lines = [
@@ -1236,7 +1246,7 @@ class Handler(BaseHTTPRequestHandler):
         writable_only = get_bool_param(qs, "writable")
         if writable_only:
             rows = conn.execute("""
-                SELECT DISTINCT f1.NAME AS SRC, f2.NAME AS DST
+                SELECT DISTINCT f2.NAME AS SRC, f1.NAME AS DST
                 FROM DEFINERS d
                 JOIN FILES f1 ON d.BASEFILEID = f1.FID
                 JOIN FILES f2 ON d.DEFINERID = f2.FID
