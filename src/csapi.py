@@ -131,6 +131,25 @@ SAVED_QUERIES_FUNCTIONS = {
     "called_once": {"where": "fi.RO = 0 AND f.FANIN = 1"},
 }
 
+IDENTIFIER_CLASSES = [
+    ("Tag for struct/union/enum", "SUETAG"),
+    ("Member of struct/union", "SUMEMBER"),
+    ("Label", "LABEL"),
+    ("Ordinary identifier", "ORDINARY"),
+    ("Macro", "MACRO"),
+    ("Undefined macro", "UNDEFMACRO"),
+    ("Undefed macro", "UNDEFEDMACRO"),
+    ("Macro redefined with same value", "REDEFEDSAMEMACRO"),
+    ("Macro redefined with different value", "REDEFEDDIFFMACRO"),
+    ("Macro argument", "MACROARG"),
+    ("File scope", "CSCOPE"),
+    ("Project scope", "LSCOPE"),
+    ("Typedef", "TYPEDEF"),
+    ("Enumeration constant", "ENUM"),
+    ("Yacc identifier", "YACC"),
+    ("Function", "FUN"),
+]
+
 
 def ensure_index(conn: sqlite3.Connection, table: str, columns: list) -> None:
     """Ensure that an index exists on the specified table and columns."""
