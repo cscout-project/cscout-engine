@@ -549,6 +549,37 @@ class Handler(BaseHTTPRequestHandler):
 
     def handle_files(self, conn, qs):
         """Handle /files requests with optional filters.
+    def handle_identifier_resolve(self, conn, qs):
+        """Handle /identifier/resolve requests.
+        
+        Returns the exact identifier (EID) based on name, file, and line number.
+        """
+        name = get_required_param(qs, "name")
+        file_path = get_required_param(qs, "file")
+        line = get_required_int_param(qs, "line")
+
+        query = """
+            SELECT i.* FROM IDS i
+            JOIN TOKENS t ON i.EID = t.EID
+            JOIN FILES f ON t.FID = f.FID
+            LEFT JOIN LINEPOS l ON l.FID = t.FID AND l.FOFFSET = (
+                SELECT MAX(FOFFSET) FROM LINEPOS WHERE FID = t.FID AND FOFFSET <= t.FOFFSET
+            )
+            WHERE i.NAME = ? AND (f.NAME = ? OR f.NAME LIKE ?) AND l.LNUM = ?
+            LIMIT 1
+        """
+        # File paths might be absolute in VS Code but relative in CScout, or vice versa,
+        # so we allow an exact match or an ends-with match.
+        like_file_path = "%/" + file_path.replace("\\", "/").split("/")[-1]
+        
+        row = conn.execute(query, (name, file_path, like_file_path, line)).fetchone()
+        
+        if row is None:
+            self.send_error_json(404, "Identifier not found at that location")
+            return
+            
+        self.send_json(dict(row))
+
 
         Parameters mirror the CScout web file query (xfilequery.html):
         writable=1       — writable files only (RO=0)
