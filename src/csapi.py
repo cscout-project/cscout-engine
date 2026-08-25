@@ -1225,7 +1225,14 @@ class Handler(BaseHTTPRequestHandler):
         self._send_file_graph_svg(rows, "File include graph")
 
     def handle_filegraph_compile(self, conn, qs):
-        """Compile-time dependency graph via graphviz."""
+        """Compile-time dependency graph via graphviz.
+
+        DEFINERS.BASEFILEID is the file requiring a definition (the
+        dependent), DEFINERID is the file providing it (the dependency).
+        SRC is always the dependency, DST the dependent, matching the
+        convention used by the include graph, so _send_file_graph_svg's
+        arrow (drawn pointing at SRC) points at the right end.
+        """
         writable_only = get_bool_param(qs, "writable")
         if writable_only:
             rows = conn.execute("""
@@ -1233,11 +1240,11 @@ class Handler(BaseHTTPRequestHandler):
                 FROM DEFINERS d
                 JOIN FILES f1 ON d.BASEFILEID = f1.FID
                 JOIN FILES f2 ON d.DEFINERID = f2.FID
-                WHERE f1.RO = 0
+                WHERE f1.RO = 0 AND f2.RO = 0
             """).fetchall()
         else:
             rows = conn.execute("""
-                SELECT DISTINCT f1.NAME AS SRC, f2.NAME AS DST
+                SELECT DISTINCT f2.NAME AS SRC, f1.NAME AS DST
                 FROM DEFINERS d
                 JOIN FILES f1 ON d.BASEFILEID = f1.FID
                 JOIN FILES f2 ON d.DEFINERID = f2.FID
@@ -1245,11 +1252,18 @@ class Handler(BaseHTTPRequestHandler):
         self._send_file_graph_svg(rows, "Compile-time dependency graph")
 
     def handle_filegraph_control(self, conn, qs):
-        """Control dependency graph (through function calls) via graphviz."""
+        """Control dependency graph (through function calls) via graphviz.
+
+        fn1/f1 is the caller (the dependent), fn2/f2 is the callee (the
+        dependency). SRC is always the dependency, DST the dependent,
+        matching the convention used by the include graph, so
+        _send_file_graph_svg's arrow (drawn pointing at SRC) points at
+        the right end.
+        """
         writable_only = get_bool_param(qs, "writable")
         if writable_only:
             rows = conn.execute("""
-                SELECT DISTINCT f1.NAME AS SRC, f2.NAME AS DST
+                SELECT DISTINCT f2.NAME AS SRC, f1.NAME AS DST
                 FROM FCALLS fc
                 JOIN FUNCTIONS fn1 ON fc.SOURCEID = fn1.ID
                 JOIN FUNCTIONS fn2 ON fc.DESTID = fn2.ID
@@ -1259,7 +1273,7 @@ class Handler(BaseHTTPRequestHandler):
             """).fetchall()
         else:
             rows = conn.execute("""
-                SELECT DISTINCT f1.NAME AS SRC, f2.NAME AS DST
+                SELECT DISTINCT f2.NAME AS SRC, f1.NAME AS DST
                 FROM FCALLS fc
                 JOIN FUNCTIONS fn1 ON fc.SOURCEID = fn1.ID
                 JOIN FUNCTIONS fn2 ON fc.DESTID = fn2.ID
@@ -1270,7 +1284,30 @@ class Handler(BaseHTTPRequestHandler):
         self._send_file_graph_svg(rows, "Control dependency graph")
 
     def handle_filegraph_data(self, conn, qs):
-        """Data dependency graph (through global variables) via graphviz."""
+        """Data dependency graph (through global variables) via graphviz.
+
+        TODO: this can't tell which file actually defines a global
+        variable and which file just uses it. All it knows is that two
+        files mention the same variable name, so it draws the
+        connection both ways every time, there is no real direction
+        here yet.
+
+        CScout itself does know the difference, but only while it is
+        running, in memory (see the mark_runtime_use function in
+        cscout/src/globobj.cpp). It never saves that information to the
+        database.
+
+        To fix this properly:
+          1. In CScout's C++ code, add a new database table that saves
+             this define-versus-use information, the same way file
+             includes already get saved in the DEFINERS and INCLUDERS
+             tables.
+          2. Regenerate the database for any project being tested
+             against, old databases won't have the new table.
+          3. Rewrite this query to read that new table directly,
+             instead of guessing from which files happen to mention the
+             same variable name.
+        """
         writable_only = get_bool_param(qs, "writable")
         if writable_only:
             rows = conn.execute("""
@@ -1296,7 +1333,17 @@ class Handler(BaseHTTPRequestHandler):
         self._send_file_graph_svg(rows, "Data dependency graph")
 
     def _send_file_graph_svg(self, rows, title):
-        """Generate and send a graphviz SVG for file dependency edges."""
+        """Generate and send a graphviz SVG for file dependency edges.
+
+        TODO: some nodes or edges the real CScout web UI shows are
+        missing from graphs rendered here, for at least some of
+        include/compile/control/data. Not root caused yet, comparing
+        the join logic against CScout's own source didn't turn up a
+        clear cause on its own. Need to actually generate the same
+        graph (same project, same graph type, same writable/all toggle)
+        in both the real CScout web UI and here, and diff the node and
+        edge lists directly, before there's anything concrete to fix.
+        """
         if not rows:
             html = f"""<!doctype html><html><body style="font-family:sans-serif;padding:2em">
                 <p>No dependencies found.</p></body></html>"""
@@ -1331,7 +1378,7 @@ class Handler(BaseHTTPRequestHandler):
                     dot_lines.append(f'\t"{dst}" [fillcolor="#3a6fa8", style=filled, fontcolor=white];')
                 else:
                     dot_lines.append(f'\t"{dst}" [fillcolor="#2d6b40", style=filled, fontcolor=white];')
-            dot_lines.append(f'\t"{src}" -> "{dst}";')
+            dot_lines.append(f'\t"{src}" -> "{dst}" [dir=back];')
         dot_lines.append("}")
         dot_source = "\n".join(dot_lines)
 
