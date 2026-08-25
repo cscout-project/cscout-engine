@@ -398,7 +398,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(rows_to_list(rows))
 
     def handle_identifiers_counts(self, conn, qs):
-        """Handle /identifiers/counts — returns COUNT(*) per category in one query.
+        """Handle /identifiers/counts, returns COUNT(*) per category in one query.
 
         This avoids downloading thousands of rows just to show folder counts in
         the Identifiers sidebar panel.
@@ -408,11 +408,11 @@ class Handler(BaseHTTPRequestHandler):
         row = conn.execute("""
             SELECT
               COUNT(*) AS all_ids,
-              SUM(CASE WHEN READONLY=1 AND MACROARG=0 THEN 1 ELSE 0 END) AS readonly,
-              SUM(CASE WHEN READONLY=0 AND MACROARG=0 THEN 1 ELSE 0 END) AS writable,
+              SUM(CASE WHEN READONLY=1 THEN 1 ELSE 0 END) AS readonly,
+              SUM(CASE WHEN READONLY=0 THEN 1 ELSE 0 END) AS writable,
               SUM(CASE WHEN UNUSED=1 AND LSCOPE=1 AND READONLY=0 AND MACROARG=0 THEN 1 ELSE 0 END) AS unused_project,
               SUM(CASE WHEN UNUSED=1 AND CSCOPE=1 AND READONLY=0 AND MACROARG=0 THEN 1 ELSE 0 END) AS unused_file,
-              SUM(CASE WHEN UNUSED=1 AND MACRO=1 AND READONLY=0 AND MACROARG=0 THEN 1 ELSE 0 END) AS unused_macros
+              SUM(CASE WHEN UNUSED=1 AND MACRO=1 AND READONLY=0 THEN 1 ELSE 0 END) AS unused_macros
             FROM IDS
         """).fetchone()
         # File-spanning count (needs TOKENS join)
@@ -427,7 +427,10 @@ class Handler(BaseHTTPRequestHandler):
               SUM(CASE WHEN ORDINARY=1 AND FUN=0 THEN 1 ELSE 0 END) AS static_vars,
               SUM(CASE WHEN FUN=1 THEN 1 ELSE 0 END) AS static_funs
             FROM IDS
-            WHERE READONLY=0 AND ORDINARY=1 AND LSCOPE=1 AND NAME != 'main'
+            WHERE READONLY=0 AND ORDINARY=1 AND LSCOPE=1 AND UNUSED=0 AND NAME != 'main'
+            AND SUETAG=0 AND SUMEMBER=0 AND LABEL=0 AND MACRO=0 AND UNDEFMACRO=0
+            AND UNDEFEDMACRO=0 AND REDEFEDSAMEMACRO=0 AND REDEFEDDIFFMACRO=0 AND MACROARG=0
+            AND CSCOPE=0 AND TYPEDEF=0 AND ENUM=0 AND YACC=0
             AND EID NOT IN (SELECT EID FROM TOKENS GROUP BY EID HAVING COUNT(DISTINCT FID) > 1)
         """).fetchone()
         self.send_json({
