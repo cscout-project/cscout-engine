@@ -34,10 +34,7 @@ create_empty()
   local name="$1"
   log "Create empty $name"
   rm -f "$name"
-  {
-    sqlite3 -readonly $SQLITE_OPTS file-0000.db .schema |
-      sqlite3 $SQLITE_OPTS "$name"
-  } 2>&1 | logpipe "Schema $1"
+  sqlite3 $SQLITE_OPTS "$name" <"$SCHEMA_FILE" 2>&1 | logpipe "Initialize $1"
   sqlite3 $SQLITE_OPTS "$name" <<\EOF  2>&1 | logpipe "Prepare $name"
 CREATE INDEX IF NOT EXISTS idx_definers_composite ON definers(cuid, basefileid, definerid);
 CREATE INDEX IF NOT EXISTS idx_filemetrics_composite ON filemetrics(fid, precpp);
@@ -291,6 +288,7 @@ TEMP_DIR=$(mktemp -d --tmpdir=${TEMP_DIR_LOCATION:-} csmerge.XXXX)
 export TEMP_DIR
 
 DBID_FILE="$TEMP_DIR/dbid.txt"
+SCHEMA_FILE="$TEMP_DIR/schema.sql"
 
 if [ -z "${KEEP:-}" ] ; then
   # Clean up on exit or signals
@@ -325,6 +323,11 @@ fi
 echo $((NFILES + 1)) >$DBID_FILE
 
 :>$LOG_FILE
+
+# Create reusable schema file
+sqlite3 -readonly $SQLITE_OPTS file-0000.db .schema >"$SCHEMA_FILE" 2>&1 |
+  logpipe "Extract schema"
+
 
 # Create array of files to merge
 files=($(seq 0 $(($NFILES - 1)) | xargs -n 1 printf 'file-%04d.db '))
