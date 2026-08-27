@@ -29,5 +29,14 @@
 
 /* To make it appear as a read-only identifier */
 int main();
+
 /* Avoid unused include file warnings */
 static void _cscout_dummy1(void) { _cscout_dummy1(); }
+
+/*
+ * Some (e.g. Linux) #define static_assert (available on C23) through
+ * _Static_assert. This results in its arguments being expanded before
+ * the grammar sees the token to trigger the integer constant expression
+ * expansion token. We disable this, by defining it here as an object macro.
+ */
+#pragma define_immutable static_assert static_assert

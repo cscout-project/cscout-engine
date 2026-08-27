@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2024 Diomidis Spinellis
+ * (C) Copyright 2024-2026 Diomidis Spinellis
  *
  * This file is part of CScout.
  *
@@ -403,6 +403,7 @@ Dbtoken::read_ids(const char *in_path)
 	bool v_def_not_c_const;
 	bool v_exp_c_const;
 	bool v_exp_not_c_const;
+	bool v_used_in_ice;
 	bool v_ordinary;
 	bool v_suetag;
 	bool v_sumember;
@@ -434,6 +435,7 @@ Dbtoken::read_ids(const char *in_path)
 		>> v_def_not_c_const
 		>> v_exp_c_const
 		>> v_exp_not_c_const
+		>> v_used_in_ice
 
 		>> v_ordinary
 		>> v_suetag
@@ -473,6 +475,7 @@ Dbtoken::read_ids(const char *in_path)
 			if (v_def_not_c_const) ec->set_attribute(is_def_not_c_const);
 			if (v_exp_c_const) ec->set_attribute(is_exp_c_const);
 			if (v_exp_not_c_const) ec->set_attribute(is_exp_not_c_const);
+			if (v_used_in_ice) ec->set_attribute(is_used_in_ice);
 
 			if (v_ordinary) ec->set_attribute(is_ordinary);
 			if (v_suetag) ec->set_attribute(is_suetag);
@@ -519,6 +522,7 @@ Dbtoken::dump_id(ostream &of, Eclass *e, const string &name)
 	     e->get_attribute(is_def_not_c_const) << ',' <<
 	     e->get_attribute(is_exp_c_const) << ',' <<
 	     e->get_attribute(is_exp_not_c_const) << ',' <<
+	     e->get_attribute(is_used_in_ice) << ',' <<
 
 	     e->get_attribute(is_ordinary) << ',' <<
 	     e->get_attribute(is_suetag) << ',' <<

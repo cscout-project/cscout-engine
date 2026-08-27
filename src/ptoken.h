@@ -29,6 +29,7 @@
 #include <map>
 #include <string>
 #include <deque>
+#include <vector>
 
 using namespace std;
 
@@ -46,15 +47,16 @@ typedef set <Token> HideSet;
 class Ptoken : public Token {
 private:
 	HideSet hideset;	// Hide set used for macro expansions
-	const Macro *producer;	// Macro that produced this token
-				// This is the caller when further
-				// replacements are made.
+
+	// Macros that produced this token
+	// The back() one is the caller when further replacements are made.
+	vector<const Macro *> producers;
 public:
 	// Construct it based on the token code and the contents
 	Ptoken(int icode, const string& ival)
-		: Token(icode, ival), producer(nullptr) {};
+		: Token(icode, ival) {};
 	// Efficient constructor
-	Ptoken() : Token(), producer(nullptr) {}
+	Ptoken() : Token() {}
 	// Construct it from a CToken
 	Ptoken(const Ctoken &t);
 
@@ -62,14 +64,14 @@ public:
 	Ptoken(const Ptoken& other)
 	    : Token(other),
 	      hideset(other.hideset),
-	      producer(other.producer)
+	      producers(other.producers)
 	{}
 
 	Ptoken& operator=(const Ptoken& other) {
 		if (this != &other) {
 			Token::operator=(other);
 			hideset = other.hideset;
-			producer = other.producer;
+			producers = other.producers;
 		}
 		return *this;
 	}
@@ -80,8 +82,11 @@ public:
 	inline void hideset_insert(HideSet::const_iterator b, HideSet::const_iterator e) { hideset.insert(b, e); }
 	inline const HideSet& get_hideset() const { return (hideset); }
 
-	inline const Macro *get_producer() const { return producer; }
-	inline void set_producer(const Macro *m) { producer = m; }
+	inline const Macro *get_producer() const {
+		return producers.size() ? producers.back() : nullptr;
+	}
+	const vector<const Macro *> &get_producers() { return producers; }
+	inline void add_producer(const Macro *m) { producers.push_back(m); }
 	/*
 	 * Set the is_cpp_str_val attribute for the macros that were
 	 * expanded to yield the stringized or pasted token.

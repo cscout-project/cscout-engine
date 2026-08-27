@@ -165,6 +165,7 @@ make_keymap()
 	m["constexpr"] = CONSTEXPR;
 	m["nullptr"] = NULLPTR;
 	m["_Alignof"] = ALIGNOF;
+	m["static_assert"] = STATIC_ASSERT;
 
 	/* Microsoft */
 	m["_asm"] = MSC_ASM;

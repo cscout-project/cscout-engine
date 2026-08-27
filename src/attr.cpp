@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2002-2024 Diomidis Spinellis
+ * (C) Copyright 2002-2026 Diomidis Spinellis
  *
  * This file is part of CScout.
  *
@@ -59,6 +59,7 @@ string Attributes::attribute_names[] = {
 	"Value defined as not a C compile-time constant",
 	"Value expanded as a C compile-time constant",
 	"Value expanded as not a C compile-time constant",
+	"Value used in C integer compile-time expression context",
 
 	// User-visible attributes start here
 	"Read-only",
@@ -95,6 +96,7 @@ string Attributes::attribute_short_names[] = {
 	"defnotcconst",
 	"expcconst",
 	"expnotcconst",
+	"iceuse",
 
 	// User-visible attributes start here
 	"ro",

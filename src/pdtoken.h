@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2001-2019 Diomidis Spinellis
+ * (C) Copyright 2001-2026 Diomidis Spinellis
  *
  * This file is part of CScout.
  *
@@ -65,6 +65,8 @@ private:
 	static PtokenSequence expand;		// Expanded input
 
 	static bool at_bol;			// At beginning of line
+	static bool in_ice;			// Within a C integer constant
+						// expression
 	static stackbool iftaken;		// Taken #ifs
 	static int skiplevel;			// Level of enclosing #ifs
 	static bool output_defines;		// Output #defines on stdout
@@ -170,6 +172,11 @@ public:
 	static void set_processed_files(CompiledRE cre) {
 		processed_files_spec = cre;
 	}
+
+	// Enter a C integer constant expression context
+	static void ice_enter();
+	// Exit a C integer constant expression context
+	static void ice_exit();
 };
 
 ostream& operator<<(ostream& o,const dequePtoken &dp);

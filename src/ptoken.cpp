@@ -54,8 +54,8 @@ operator<<(ostream& o,const Ptoken &t)
 		o << nest_end("]");
 	}
 	o << nest("producer");
-	if (t.producer)
-		o << *t.producer;
+	if (t.get_producer())
+		o << *t.get_producer();
 	else
 		o << "NULL\n";
 	o << nest_end("}");
@@ -73,7 +73,7 @@ ostream& operator<<(ostream& o,const PtokenSequence &ts)
 	return (o);
 }
 
-Ptoken::Ptoken(const Ctoken &t) : Token(t), producer(NULL)
+Ptoken::Ptoken(const Ctoken &t) : Token(t)
 {
 }
 

@@ -815,7 +815,9 @@ show_c_const(FILE *fo, Eclass *e)
 		    || (e->get_attribute(is_exp_c_const)
 			    && !e->get_attribute(is_exp_not_c_const))
 		   );
-	fprintf(fo, "<li>Can be replaced by C constant: %s\n", val ? "Yes" : "No");
+	fprintf(fo, "<li>Can be replaced by C enumerator: %s\n",
+	    val ? "Probably" : "No");
+	fprintf(fo, "<li>Can be replaced by C <code>const</code>: %s\n", val && !e->get_attribute(is_used_in_ice) ? "Probably" : "No");
 	fprintf(fo, "<ul>\n");
 	for (int i = is_fun_macro; i <= is_exp_not_c_const; i++)
 		show_id_prop(fo, Attributes::name(i), e->get_attribute(i));

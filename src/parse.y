@@ -187,7 +187,6 @@ yacc_type_define(Type name, Type type, enum e_yacc_symbol_type ytype)
 	if (name.get_token().get_code() == IDENTIFIER)
 		make_yacc_identifier(name, ytype);
 }
-
 %}
 
 
@@ -856,8 +855,13 @@ constant_expression:
 	 * Depending on its arguments it can yield a constant expression,
 	 * so it appears here as well as in postfix_expression/
 	 */
-        | CHOOSE_EXPR '(' assignment_expression ',' assignment_expression ',' assignment_expression ')'
-			{ $$ = $5; }
+        | CHOOSE_EXPR { Pdtoken::ice_enter(); } '('  assignment_expression
+	  ',' assignment_expression ',' assignment_expression
+	  ')'
+		{
+			Pdtoken::ice_exit();
+			$$ = $6;
+		}
         ;
 
 range_expression:
@@ -943,10 +947,18 @@ declaration:
 	| label_declaring_list ';'
         ;
 
+// Common part is required to avoid trial parsing between the two
+// static_assert_declaration rules
+static_assert_begin:
+	STATIC_ASSERT { Pdtoken::ice_enter(); } '('
+	;
+
 static_assert_declaration:
-	STATIC_ASSERT '(' constant_expression ',' string_literal_list ')' ';'
+	static_assert_begin constant_expression ',' { Pdtoken::ice_exit(); }
+	  string_literal_list ')' ';'
 		{ $$ = basic(b_undeclared); }
-	| STATIC_ASSERT '(' constant_expression ')' ';'
+	| static_assert_begin constant_expression ')'
+	  { Pdtoken::ice_exit(); } ';'
 		{ $$ = basic(b_undeclared); }
 	;
 
@@ -1445,6 +1457,7 @@ member_declarator:
 	/* a : 5 */
         declarator bit_field_size_opt
 		{
+			Pdtoken::ice_exit();
 			Filedetails::get_post_cpp_metrics(Fchar::get_fileid()).add_amember();
 			$$ = $1;
 		}
@@ -1471,7 +1484,10 @@ bit_field_size_opt:
         ;
 
 bit_field_size:
-        ':' constant_expression
+        { Pdtoken::ice_enter(); } ':' constant_expression
+		{
+			Pdtoken::ice_exit();
+		}
         ;
 
 enum_name:
@@ -1535,9 +1551,10 @@ enumerator_value_opt:
 			$$ =  basic(b_int, s_none, c_enum);
 			$$.set_value(CTConst());
 		}
-        | '=' constant_expression
+        | { Pdtoken::ice_enter(); } '=' constant_expression
 		{
-			$$ = $2;
+			Pdtoken::ice_exit();
+			$$ = $3;
 			$$.set_storage_class(basic(b_int, s_none, c_enum));
 		}
         ;
@@ -1821,16 +1838,17 @@ designator:
 	 * Therefore, it is enough to advance to the range's
 	 * last element.
 	 */
-        '[' range_expression ']'
+        { Pdtoken::ice_enter(); } '[' range_expression ']'
 		{
+			Pdtoken::ice_exit();
 			/* Pop unbraced stack elements. Set pos of TOS to $2. */
 			while (!Initializer::element_stack.empty() && !ITOS.braced)
 				Initializer::element_stack.pop();
 			if (Initializer::element_stack.empty())
 				Error::error(E_ERR, "designator does not appear in a braced initializer");
 			else
-				if ($2.get_value().is_const())
-					ITOS.pos = $2.get_value().get_int_value();
+				if ($3.get_value().is_const())
+					ITOS.pos = $3.get_value().get_int_value();
 				else
 					Error::error(E_WARN, "unable to evaluate designator's compile-time constant");
 		}
@@ -1852,13 +1870,14 @@ designator:
 			}
 		}
 	/* See above for how we handle range expressions. */
-        | designator '[' range_expression ']'
+        | designator { Pdtoken::ice_enter(); } '[' range_expression ']'
 		{
-			/* Push (unbraced) TOS[pos] and set pos to $3. */
+			Pdtoken::ice_exit();
+			/* Push (unbraced) TOS[pos] and set pos to $4. */
 			csassert(!Initializer::element_stack.empty());
 			Initializer::element_stack.push(Initializer(ITOS.t.member(ITOS.pos), false));
-			if ($3.get_value().is_const())
-				ITOS.pos = $3.get_value().get_int_value();
+			if ($4.get_value().is_const())
+				ITOS.pos = $4.get_value().get_int_value();
 			else
 				Error::error(E_WARN, "unable to evaluate designator's compile-time constant");
 		}
@@ -1904,7 +1923,10 @@ any_statement:
 label:
         identifier_or_typedef_name ':' attribute_list_opt
 		{ label_define($1.get_token()); }
-        | CASE range_expression ':'
+        | { Pdtoken::ice_enter(); } CASE range_expression ':'
+		{
+			Pdtoken::ice_exit();
+		}
         | DEFAULT ':'
         ;
 
@@ -2485,7 +2507,11 @@ postfixing_abstract_declarator:
 
 constant_expression_opt:
 	  /* EMPTY */
-		{ $$ = basic(); }
+		{
+			// ice_enter() called by array_abstract_declarator
+			Pdtoken::ice_exit();
+			$$ = basic();
+		}
 	| constant_expression
 	;
 
@@ -2506,11 +2532,16 @@ array_qualifier:
 	;
 
 array_abstract_declarator:
-          '[' array_qualifier ']'
-		{ $$ = array_of(basic(), $2.get_value()); }
-        | array_abstract_declarator '[' array_qualifier ']'
+        { Pdtoken::ice_enter(); } '[' array_qualifier ']'
 		{
-			$1.set_abstract(array_of(basic(), $3.get_value()));
+			Pdtoken::ice_exit();
+			$$ = array_of(basic(), $3.get_value());
+		}
+        | array_abstract_declarator { Pdtoken::ice_enter(); }
+	  '[' array_qualifier ']'
+		{
+			Pdtoken::ice_exit();
+			$1.set_abstract(array_of(basic(), $4.get_value()));
 			$$ = $1;
 		}
         ;

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2002-2024 Diomidis Spinellis
+ * (C) Copyright 2002-2026 Diomidis Spinellis
  *
  * This file is part of CScout.
  *
@@ -52,6 +52,8 @@ enum e_attribute {
 	// Findings based on expanded object-like macros.
 	is_exp_c_const,		// Value seen as a C compile-time constant.
 	is_exp_not_c_const,	// Value seen as not a C compile-time constant.
+	is_used_in_ice,		// Value used in a C integer constant
+				// expression (ICE) context
 
 	// User-visible attributes start here
 	is_readonly,		// Read-only; true if any member

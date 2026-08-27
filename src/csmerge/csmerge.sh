@@ -142,7 +142,7 @@ merge_onto()
      set -eu
      set -o pipefail
      {
-       log "DB $dbid: running $i"
+       log "DB $dbid: running $i on $dest with $source attached"
 
        # Disable all durability guarantees
        sqllite_config

@@ -61,12 +61,14 @@
 #include "call.h"
 #include "mcall.h"
 #include "filedetails.h"
+#include "eclass.h"
 #include "os.h"
 #include "ctag.h"
 #include "type.h"		// stab.h
 #include "stab.h"		// Block::enter()
 
 bool Pdtoken::at_bol = true;
+bool Pdtoken::in_ice = false;
 bool Pdtoken::output_defines = false;
 PtokenSequence Pdtoken::expand;
 mapMacro Pdtoken::macros;		// Defined macros
@@ -90,6 +92,24 @@ Pdtoken::shall_skip(Fileid fid)
 	return ret;
 }
 
+// Enter a C integer constant expression context
+void
+Pdtoken::ice_enter()
+{
+	if (DP())
+		cout << "ICE {\n";
+	in_ice = true;
+};
+
+// Exit a C integer constant expression context
+void
+Pdtoken::ice_exit()
+{
+	if (DP())
+		cout << "ICE }\n";
+	in_ice = false;
+}
+
 void
 Pdtoken::getnext()
 {
@@ -107,6 +127,19 @@ Pdtoken::getnext()
 		current_line.clear();
 	else
 		current_line.push_back(*this);
+
+	// Mark identifiers used in an integer constant expression context
+	if (DP())
+		cout << "Marking ICE:" << in_ice << " P:" << get_producer() << "\n";
+	if (in_ice && get_producers().size())
+		for (const Macro *producer : get_producers()) {
+			Ptoken name(producer->get_name_token());
+			for (dequeTpart::const_iterator tp = name.get_parts_begin(); tp != name.get_parts_end(); tp++) {
+				Eclass *ec = tp->get_tokid().check_ec();
+				if (ec)
+					ec->set_attribute(is_used_in_ice);
+			}
+		}
 }
 
 void
@@ -185,7 +218,10 @@ again:
 			break;
 		}
 		expand.push_front(t);
-		expand = macro_expand(expand, Macro::TokenSourceOption::get_more, Macro::OperatorHandling::process, Macro::CalledContext::process_c);
+		expand = macro_expand(expand,
+		    Macro::TokenSourceOption::get_more,
+		    Macro::OperatorHandling::process,
+		        Macro::CalledContext::process_c);
 		goto expand_get;
 		[[fallthrough]];
 	default:

@@ -171,6 +171,7 @@ insert_eclass(Sql *db, ostream &of, Eclass *e, const string &name)
 		     db->boolval(e->get_attribute(is_def_not_c_const)) << ',' <<
 		     db->boolval(e->get_attribute(is_exp_c_const)) << ',' <<
 		     db->boolval(e->get_attribute(is_exp_not_c_const)) << ',' <<
+		     db->boolval(e->get_attribute(is_used_in_ice)) << ',' <<
 
 		     db->boolval(e->get_attribute(is_ordinary)) << ',' <<
 		     db->boolval(e->get_attribute(is_suetag)) << ',' <<
@@ -429,6 +430,7 @@ workdb_schema(Sql *db, ostream &of)
 		"  NOTDEFCCONSTVAL " << db->booltype() << ", -- True if macro value defined as not a C compile time constant\n"
 		"  EXPCCONSTVAL " << db->booltype() << ", -- True if macro value expanded as a C compile time constant\n"
 		"  NOTEXPCCONSTVAL " << db->booltype() << ", -- True if macro value expanded as not a C compile time constant\n"
+		"  ISUSEDINICE " << db->booltype() << ", -- True if macro value is used in a C integer constant expression context\n"
 
 		"  ORDINARY " << db->booltype() << ", -- True if it is an ordinary identifier (variable or function)\n"
 		"  SUETAG " << db->booltype() << ", -- True if it is a structure, union, or enumeration tag\n"

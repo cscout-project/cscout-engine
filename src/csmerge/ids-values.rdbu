@@ -8,10 +8,10 @@ fid	foffset	eid
 
 # Database null: Existing table, with local eids
 ids:
-eid name readonly undefmacro undefedmacro redefedsamemacro redefeddiffmacro macro funmacro macroarg cppconst cppstrval defcconstval notdefcconstval expcconstval notexpcconstval ordinary suetag sumember label typedef enum yacc fun cscope lscope unused
-1000 a 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1
-2000 b 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 1 0 0 0 0 1
-4000 d 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 1 0 0 0 0 1
+eid name readonly undefmacro undefedmacro redefedsamemacro redefeddiffmacro macro funmacro macroarg cppconst cppstrval defcconstval notdefcconstval expcconstval notexpcconstval isusedinice ordinary suetag sumember label typedef enum yacc fun cscope lscope unused
+1000 a 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1
+2000 b 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 1 0 0 0 0 1
+4000 d 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 1 0 1 0 0 0 0 1
 
 # Map from adjusted local fid to consolidated global fid
 fileid_to_global_map:
@@ -32,10 +32,10 @@ fid	foffset	eid
 # Database 5: Table to be imported, with local eids
 # One new, two common
 adb.ids:
-eid name readonly undefmacro undefedmacro redefedsamemacro redefeddiffmacromacro macro funmacro macroarg cppconst cppstrval defcconstval notdefcconstval expcconstval notexpcconstval ordinary suetag sumember label typedef enum yacc fun cscope lscope unused
-300 c 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 0 0 1
-200 b 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0
-400 d 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0
+eid name readonly undefmacro undefedmacro redefedsamemacro redefeddiffmacromacro macro funmacro macroarg cppconst cppstrval defcconstval notdefcconstval expcconstval notexpcconstval isusedinice ordinary suetag sumember label typedef enum yacc fun cscope lscope unused
+300 c 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 0 0 1
+200 b 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0
+400 d 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0
 
 functionid:
 functionid	ordinal	fid	foffset	len
@@ -73,9 +73,9 @@ INCLUDE CREATE eclasses.sql
 INCLUDE SELECT predictable-id-eids.sql
 
 BEGIN RESULT
-eid name readonly undefmacro undefedmacro redefedsamemacro redefeddiffmacro macro funmacro macroarg cppconst cppstrval defcconstval notdefcconstval expcconstval notexpcconstval ordinary suetag sumember label typedef enum yacc fun cscope lscope unused
-1 a 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1
-2 b 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 1 1 1 0 1 0 0 0 0 1
-3 c 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 0 0 1
-4 d 0 0 0 0 0 1 0 0 0 0 0 0 0 0 1 1 1 1 0 1 0 0 0 0 1
+eid name readonly undefmacro undefedmacro redefedsamemacro redefeddiffmacro macro funmacro macroarg cppconst cppstrval defcconstval notdefcconstval expcconstval notexpcconstval isusedinice ordinary suetag sumember label typedef enum yacc fun cscope lscope unused
+1 a 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1
+2 b 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 1 1 0 1 0 0 0 0 1
+3 c 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 1 0 0 1
+4 d 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 1 1 0 1 0 0 0 0 1
 END

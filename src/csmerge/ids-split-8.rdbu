@@ -49,11 +49,11 @@ INCLUDE CREATE eclasses.sql
 INCLUDE SELECT predictable-id-eids.sql
 
 BEGIN RESULT
-eid name readonly undefmacro undefedmacro redefedsamemacro redefeddiffmacro macro funmacro macroarg cppconst cppstrval defcconstval notdefcconstval expcconstval notexpcconstval ordinary suetag sumember label typedef enum yacc fun cscope lscope unused
-1 a 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
-2 b 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
-3 c 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
-4 d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
-5 e 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
-6 f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+eid name readonly undefmacro undefedmacro redefedsamemacro redefeddiffmacro macro funmacro macroarg cppconst cppstrval defcconstval notdefcconstval expcconstval notexpcconstval isusedinice ordinary suetag sumember label typedef enum yacc fun cscope lscope unused
+1 a 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+2 b 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+3 c 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+4 d 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+5 e 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
+6 f 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0
 END
