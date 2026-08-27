@@ -36,7 +36,7 @@
 %token DEFAULT         GOTO            SIZEOF          VOLATILE
 %token DO              IF              STATIC          WHILE
 %token RESTRICT        INLINE	       BOOL	       THREAD_LOCAL
-%token GENERIC	       COMPLEX         IMAGINARY
+%token GENERIC	       COMPLEX         IMAGINARY       SIMD
 %token NORETURN        STATIC_ASSERT   ATOMIC          CONSTEXPR       NULLPTR
 
 /* ANSI Grammar suggestions */
