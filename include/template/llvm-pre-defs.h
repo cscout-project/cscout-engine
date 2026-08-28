@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2016 Diomidis Spinellis
+ * (C) Copyright 2016-2026 Diomidis Spinellis
  *
  * This file is part of CScout.
  *
@@ -25,6 +25,4 @@
 #define _Nonnull
 #define _Null_unspecified
 #define _Nullable
-
-#define __has_include_next(x) 0
 #endif
