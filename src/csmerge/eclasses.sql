@@ -6,7 +6,12 @@
 -- When the script is run from merge.sh the ././ sequence gets replaced
 -- with $TMPDIR and 5 with the appropriate database identifier.
 
--- A map from eids to an identifying tokid
+-- Remove any temporary output files, so that tests won't read previous ones
+-- if CScout fails and the script bails out early.
+.shell rm -f ././new-eclasses-5.csv ././new-ids-5.csv ././new-functionid-5.csv ././new-idproj-5.csv ././functionid-to-global-map-5.csv
+
+-- A map from eids to an arbitrary identifying tokid
+
 CREATE TEMP TABLE eid_to_tokid_map(
   eid INTEGER PRIMARY KEY,-- Equivalence class identifier in an unmerged database
   fid INTEGER,          -- File id representing eid
@@ -124,8 +129,15 @@ SELECT 5 AS dbid, fid, foffset, ai.*
 
 .output stdout
 
--- Invoke CScout to merge and unify the output elements
-.shell sh -c 'cscout -M ././eclasses-a-5.txt ././eclasses-o-5.txt ././ids-5.txt ././functionid-a-5.txt ././functionid-o-5.txt ././idproj-5.txt ././new-eclasses-5.csv ././new-ids-5.csv ././new-functionid-5.csv ././new-idproj-5.csv ././functionid-to-global-map-5.csv'
+-- Invoke CScout to merge and unify the output elements.
+-- *-o-.txt files are from the original database and *-a-.txt files
+-- are from the attached database.
+-- Write out exit code to verify it.  (SQLite's .bail doesn't fail
+-- on non-zero shell commands.)  Avoid $? as this doesn't work reliably.
+.shell sh -c 'if cscout -M ././eclasses-a-5.txt ././eclasses-o-5.txt ././ids-5.txt ././functionid-a-5.txt ././functionid-o-5.txt ././idproj-5.txt ././new-eclasses-5.csv ././new-ids-5.csv ././new-functionid-5.csv ././new-idproj-5.csv ././functionid-to-global-map-5.csv ; then echo 0 ; else echo 1 ; fi >5.command-status'
+
+-- Due to integrity check this will fail and bail out on failures
+.import 5.command-status command_status
 
 DELETE FROM tokens;
 DELETE FROM ids;

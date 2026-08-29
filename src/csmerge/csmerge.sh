@@ -91,6 +91,9 @@ PRAGMA mmap_size = 268435456;      -- 256 MB memory-mapped I/O
 PRAGMA foreign_keys = OFF;         -- disable FK checks if not needed
 PRAGMA wal_autocheckpoint = 0;     -- disable WAL checkpoints
 
+-- Table to check shell commands' exit status
+CREATE TEMP TABLE command_status(status INTEGER NOT NULL CHECK (status = 0));
+
 -- Exit on errors
 .bail on
 

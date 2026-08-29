@@ -67,9 +67,12 @@ unify_and_clear(Dbtoken &found, Dbtoken &read)
 
 static int line_number;
 
+static int n_errors = 0;
+
 static void
-warn(const char *file_name, const string &context, Tokid ti)
+issue_error(const char *file_name, const string &context, Tokid ti)
 {
+	n_errors += 1;
 	cerr << file_name << '(' << line_number << "): " << context
 		    << ": missing EC for file "
 		    << ti.get_fileid().get_id() << " offset "
@@ -77,10 +80,20 @@ warn(const char *file_name, const string &context, Tokid ti)
 }
 
 static void
-warn(const char *file_name, const string &s)
+issue_error(const char *file_name, const string &s)
 {
+	n_errors += 1;
 	cerr << file_name << '(' << line_number << "): malformed input: "
 		<< s << "\n";
+}
+
+static void
+exit_on_error()
+{
+	if (n_errors > 0) {
+		cerr << "Issued " << n_errors << " errors; exiting.\n";
+		exit(1);
+	}
 }
 
 /*
@@ -169,7 +182,7 @@ Dbtoken::add_eclasses_attached(const char *in_path)
 		unsigned long offset;
 		int len;
 		if (!(line_stream >> fid >> offset >> len >> ecid)) {
-			warn(in_path, line_record);
+			issue_error(in_path, line_record);
 			continue;
 		}
 
@@ -187,6 +200,7 @@ Dbtoken::add_eclasses_attached(const char *in_path)
 		ec = new Eclass(ti, len);
 		prev_ecid = ecid;
 	}
+	exit_on_error();
 }
 
 /*
@@ -215,7 +229,7 @@ add_eclasses_original(const char *in_path)
 		unsigned long offset;
 		int len;
 		if (!(line_stream >> fid >> offset >> len >> ecid)) {
-			warn(in_path, line_record);
+			issue_error(in_path, line_record);
 			continue;
 		}
 
@@ -241,6 +255,7 @@ add_eclasses_original(const char *in_path)
 		}
 		prev_ecid = ecid;
 	}
+	exit_on_error();
 }
 
 
@@ -270,7 +285,7 @@ merge_eclasses_original(const char *in_path)
 		unsigned long offset;
 		int len;
 		if (!(line_stream >> fid >> offset >> len >> ecid)) {
-			warn(in_path, line_record);
+			issue_error(in_path, line_record);
 			continue;
 		}
 
@@ -312,7 +327,7 @@ merge_eclasses_original(const char *in_path)
 				attached_ti += ec_attached->get_len();
 				ec_attached = attached_ti.check_ec();
 				if (!ec_attached) {
-					warn(in_path, "Obtain next attached EC", attached_ti);
+					issue_error(in_path, "Obtain next attached EC", attached_ti);
 					original_len = attached_len;
 				}
 				attached.add_part(attached_ti, ec_attached->get_len());
@@ -322,7 +337,7 @@ merge_eclasses_original(const char *in_path)
 				original_ti += ec_original->get_len();
 				ec_original = original_ti.check_ec();
 				if (!ec_original) {
-					warn(in_path, "Obtain next original EC", original_ti);
+					issue_error(in_path, "Obtain next original EC", original_ti);
 					attached_len = original_len;
 				}
 				original.add_part(original_ti, ec_original->get_len());
@@ -332,6 +347,7 @@ merge_eclasses_original(const char *in_path)
 
 		unify_and_clear(original, attached);
 	}
+	exit_on_error();
 }
 
 /*
@@ -457,7 +473,7 @@ Dbtoken::read_ids(const char *in_path)
 			Eclass *ec = check_ec(ti);
 
 			if (ec == NULL) {
-				warn(in_path, "Obtain id EC", ti);
+				issue_error(in_path, "Obtain id EC", ti);
 				goto next_line;
 			}
 
@@ -495,6 +511,7 @@ Dbtoken::read_ids(const char *in_path)
 next_line:
 		continue;
 	}
+	exit_on_error();
 }
 
 set <Eclass *> Dbtoken::dumped_ids;
@@ -567,7 +584,7 @@ Dbtoken::write_ids(const char *in_path, const char *out_path)
 		intptr_t ecid;
 		string name;
 		if (!(line_stream >> dbid >> fid >> offset >> ecid >> name)) {
-			warn(in_path, line_record);
+			issue_error(in_path, line_record);
 			continue;
 		}
 
@@ -578,7 +595,7 @@ Dbtoken::write_ids(const char *in_path, const char *out_path)
 			Eclass *ec = check_ec(ti);
 
 			if (ec == NULL) {
-				warn(in_path, "Obtain next id EC", ti);
+				issue_error(in_path, "Obtain next id EC", ti);
 				goto next_line;
 			}
 
@@ -592,6 +609,7 @@ next_line:
 		continue;
 	}
 	dumped_ids.clear();
+	exit_on_error();
 }
 
 
@@ -699,7 +717,7 @@ Dbtoken::read_write_functionids(
 			istringstream line_stream(line_record);
 			string name;
 			if (!(line_stream >> dbid >> functionid >> fileid >> offset >>len)) {
-				warn(fid_in_path, line_record);
+				issue_error(fid_in_path, line_record);
 				continue;
 			}
 			line_stream >> name;
@@ -729,6 +747,7 @@ Dbtoken::read_write_functionids(
 
 	read_functionid(fid_in_path_attached, false);
 	read_functionid(fid_in_path_original, true);
+	exit_on_error();
 }
 
 void
@@ -756,7 +775,7 @@ Dbtoken::read_write_idproj(const char *in_path, const char *out_path)
 		unsigned long offset;
 		int len;
 		if (!(line_stream >> fileid >> offset >> len >> pid)) {
-			warn(in_path, line_record);
+			issue_error(in_path, line_record);
 			continue;
 		}
 
@@ -767,7 +786,7 @@ Dbtoken::read_write_idproj(const char *in_path, const char *out_path)
 			Eclass *ec = check_ec(ti);
 
 			if (ec == NULL) {
-				warn(in_path, "Obtain idproj EC", ti);
+				issue_error(in_path, "Obtain idproj EC", ti);
 				goto next_line;
 			}
 
@@ -796,4 +815,5 @@ Dbtoken::read_write_idproj(const char *in_path, const char *out_path)
 next_line:
 		continue;
 	}
+	exit_on_error();
 }
