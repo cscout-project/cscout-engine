@@ -110,7 +110,7 @@ merge_onto()
   # Obtain the unique identifier for the database being merged,
   # for example, /tmp/csmerge.o48j/temp-6.db or file-0007.db.
   local dbid=$(
-    basename $source |
+    basename "$source" |
       sed -E 's/^(file|temp)-([0-9]+)\.db$/\2/'
     )
 
@@ -257,7 +257,7 @@ EOF
 usage()
 {
   cat <<EOF 1>&2
-Usage: $(basename $0) [OPTION] nfiles merged.db
+Usage: $(basename "$0") [OPTION] nfiles merged.db
 
   -k        Keep temporary files.
   -l file   Specify log file name (default csmerge.log).
