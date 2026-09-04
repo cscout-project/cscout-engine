@@ -42,7 +42,10 @@ for i in file-*.cs ; do
 done
 
 echo "Merge the databases into one"
-csmerge $SHARDS make.db
+if ! csmerge $SHARDS make.db ; then
+  echo "Merge failed; log file follows."
+  cat csmerge.log
+fi
 
 echo "Reconstitute the files in the merged database"
 csreconst -tcks make.db
