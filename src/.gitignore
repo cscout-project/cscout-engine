@@ -1,3 +1,6 @@
+Session.vim
+.gdb_history
+__pycache__/
 *.swp
 css.cpp
 dep
