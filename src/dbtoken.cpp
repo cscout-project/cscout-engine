@@ -29,6 +29,8 @@
 #include <sstream>
 #include <tuple>
 #include <cstdint>
+#include <compare>
+#include <utility>
 
 using namespace std;
 
@@ -50,19 +52,6 @@ verify_open(const char *path, StreamType &f)
 		cerr << "Error opening " << path << '\n';
 		exit(1);
 	}
-}
-
-/*
- * Unify the read token onto the found token.
- */
-void
-unify_and_clear(Dbtoken &found, Dbtoken &read)
-{
-	Token::unify(found, read);
-
-	// Clear the passed token parts for reuse
-	found.clear();
-	read.clear();
 }
 
 static int line_number;
@@ -153,19 +142,28 @@ check_ec(const Tokid &ti)
 	return ec_twin;
 }
 
+// Store of maximum recorded offset per file
+static vector <unsigned long> max_fid_offset;
+
+// Record an encountered maximum offset for the given file id.
+static void
+record_offset(size_t fid, unsigned long offset)
+{
+	if (fid >= max_fid_offset.size())
+		max_fid_offset.resize(fid + 1);
+	max_fid_offset[fid] = max(offset, max_fid_offset[fid]);
+}
+
 /*
  * First, read tokids and their equivalence classes from the attached
  * (often larger) file.
- * As ECs come from a single file, all are guaranteed to be unique
- * and non-overlapping. Therefore, Create (non-twin) ECs or add entries
- * to existing ECs.
+ * As ECs come from a single file, all are guaranteed to be unique (for a
+ * given fileid, tokid) and non-overlapping. Therefore, create (non-twin)
+ * ECs or add entries to existing ECs.
  */
-void
-Dbtoken::add_eclasses_attached(const char *in_path)
+static void
+add_eclasses_attached(const char *in_path)
 {
-	Fileid::disable_filedetails();
-	Project::set_current_project("csmerge");
-
 	ifstream input(in_path);
 	verify_open(in_path, input);
 
@@ -186,18 +184,24 @@ Dbtoken::add_eclasses_attached(const char *in_path)
 			continue;
 		}
 
+		record_offset(fid, offset);
 		Tokid ti(Fileid(fid), offset);
 
 		if (DP())
 			cout << in_path << '(' << line_number << ") ti " << ti << '\n';
 
+		// Add new ECs for not encountered ones
 		if (ecid == prev_ecid) {
 			// Same EC as previous entry
 			ec->add_tokid(ti);
+			if (DP())
+				cout << "Add attached ti " << twin(ti) << '\n';
 			continue;
 		}
 
 		ec = new Eclass(ti, len);
+		if (DP())
+			cout << "Create attached ti " << twin(ti) << '\n';
 		prev_ecid = ecid;
 	}
 	exit_on_error();
@@ -212,7 +216,6 @@ Dbtoken::add_eclasses_attached(const char *in_path)
 static void
 add_eclasses_original(const char *in_path)
 {
-
 	ifstream input(in_path);
 	verify_open(in_path, input);
 
@@ -233,6 +236,7 @@ add_eclasses_original(const char *in_path)
 			continue;
 		}
 
+		record_offset(fid, offset);
 		Tokid ti(Fileid(fid), offset);
 
 		if (DP())
@@ -245,9 +249,10 @@ add_eclasses_original(const char *in_path)
 			continue;
 		}
 
-		// Add ECs for not found ones
+		// Add new ECs for not encountered ones
 		ec = ti.check_ec();
 		if (ec == nullptr || ec->get_len() != len) {
+			// Same EC as previous entry
 			// fids from original are stored -ve to avoid clashes
 			ec = new Eclass(twin(ti), len);
 			if (DP())
@@ -258,111 +263,212 @@ add_eclasses_original(const char *in_path)
 	exit_on_error();
 }
 
+// An abstraction for data regarding ECs to merge
+class MergeGatherer {
+private:
+	Tokid ti;	// Current file and position
+	Eclass *ec;	// Identified EC
+	Dbtoken token;	// Gathered token to merge
+public:
+	MergeGatherer(Eclass *ec, const Tokid &ti) : ti(ti), ec(ec) {}
+
+	// Forwarding methods
+	int get_len() const { csassert(ec); return ec->get_len(); }
+	void add_part(Tokid ti, int len) { token.add_part(ti, len); }
+	Eclass *check_ec() const { return ti.check_ec(); }
+	const Dbtoken &get_token() const { return token; }
+	Tokid get_tokid() const { return ti; }
+	auto get_fileid() const { return ti.get_fileid(); }
+	cs_offset_t get_streampos() const { return ti.get_streampos(); }
+	void set_ec(Eclass *ec) { this->ec = ec; }
+	void set_tokid(const Tokid &ti) { this->ti = ti; }
+	auto get_parts_size() const { return token.get_parts_size(); }
+
+	// Advance file position to the end of the current EC, adding the token.
+	void advance() {
+		int len = get_len();
+		add_part(ti, len);
+		ti += len;
+	}
+
+	// From current position
+	void set_ec() { ec = check_ec(); }
+
+	// Return the end position.
+	cs_offset_t get_end_pos() const {
+		return get_streampos() + get_len();
+	}
+
+	// Compare end positions
+	auto operator<=>(const MergeGatherer &other) const {
+		return get_end_pos() <=> other.get_end_pos();
+	}
+
+	friend std::ostream &
+	operator<<(std::ostream &os, const MergeGatherer &g) {
+		os << "MergeGatherer {\n" << g.ti
+		<< "\nEC: {" << g.ec << ' ';
+		if (g.ec)
+			os << *g.ec;
+		return os << "}\nAssembled token: " << g.token
+		<< '}';
+	}
+};
+
 
 /*
- * Third, go through the original eclasses looking for twins
- * (of different length).
- * Put together tokens of the same length, and unify them.
- *
- * Go through the file rather than the EC map, because the map changes
- * as tokens get unified.
+ * Unify a chain of possible overlapping ECs starting by the leader
+ * and continuing by the twin follower until both reach their end.
+ * For examples, see csmerge test files tokens-split-{12,13}.rdbu.
  */
-static void
-merge_eclasses_original(const char *in_path)
+void
+unify_chain_ecs(MergeGatherer leader)
 {
 
-	ifstream input(in_path);
-	verify_open(in_path, input);
+	MergeGatherer follower(nullptr, twin(leader.get_tokid()));
 
-	string line_record;
-	line_number = 0;
-	while (getline(input, line_record)) {
-		line_number++;
-
-		istringstream line_stream(line_record);
-		intptr_t ecid; // EC identifier read from file
-		int fid;
-		unsigned long offset;
-		int len;
-		if (!(line_stream >> fid >> offset >> len >> ecid)) {
-			issue_error(in_path, line_record);
-			continue;
-		}
-
-		// Initialize a possibly attached ti, and the original,
-		// which is -ve.
-		Tokid attached_ti(Fileid(fid), offset);
-		Tokid original_ti(twin(attached_ti));
-
+	// For the whole chain
+	for (;;) {
 		if (DP())
-			cout << in_path << '(' << line_number << ") ti "
-				<< attached_ti << '\n';
+			cout << "unify_chain_ecs loop\nLeader: " << leader
+				<< "\nFollower: " << follower << '\n';
+		// Invariants
+		csassert(leader.check_ec() != nullptr);
+		csassert(follower.get_streampos() >= leader.get_streampos());
 
-		Eclass *ec_attached = attached_ti.check_ec();
-		if (!ec_attached)
-			continue;
-
-		Eclass *ec_original = original_ti.check_ec();
-		// It may bot have been added, because it was in attached
-		if (!ec_original)
-			continue;
-
-		// Assemble tokids into two equal-length tokens to unify
-		Dbtoken original; // -ve fids; same as ti
-		original.add_part(original_ti, ec_original->get_len());
-		int original_len = ec_original->get_len();
-
-		Dbtoken attached; // +ve fids
-		attached.add_part(attached_ti, ec_attached->get_len());
-		int attached_len = ec_attached->get_len();
-
-		while (original_len != attached_len) {
-			if (DP()) {
-				cout << "Tokid: " << attached_ti << '\n';
-				cout << "Original: " << original << '\n';
-				cout << "Attached: " << attached << '\n';
-			}
-			if (original_len > attached_len) {
-				// Find and add an attached EC
-				attached_ti += ec_attached->get_len();
-				ec_attached = attached_ti.check_ec();
-				if (!ec_attached) {
-					issue_error(in_path, "Obtain next attached EC", attached_ti);
-					original_len = attached_len;
-				}
-				attached.add_part(attached_ti, ec_attached->get_len());
-				attached_len += ec_attached->get_len();
-			} else {
-				// Find and add an original EC
-				original_ti += ec_original->get_len();
-				ec_original = original_ti.check_ec();
-				if (!ec_original) {
-					issue_error(in_path, "Obtain next original EC", original_ti);
-					attached_len = original_len;
-				}
-				original.add_part(original_ti, ec_original->get_len());
-				original_len += ec_original->get_len();
-			}
+		// Try to find a follower EC overlapping with the leader.
+		Eclass *ec = nullptr;
+		int leader_offset = max(leader.get_streampos(),
+		    follower.get_streampos()) - leader.get_streampos();
+		int leader_offset_start = leader_offset;
+		Tokid ti(follower.get_fileid(),
+		    leader.get_streampos() + leader_offset);
+		if (DP())
+			cout << "Before scan leader_offset: " << leader_offset
+				<< " Follower Tokid: " << ti << '\n';
+		auto leader_len = leader.get_len();
+		for (; leader_offset < leader_len; leader_offset++) {
+			if ((ec = ti.check_ec()) != nullptr)
+				break;
+			ti++;
 		}
 
-		unify_and_clear(original, attached);
+		if (DP()) {
+			cout << "After scan leader offset: " << leader_offset
+				<< "\nFollower EC: ";
+			if (ec) cout << *ec; else cout << "null\n";
+			cout << "New follower tokid: " << ti << '\n';
+		}
+		int follower_gap = leader_offset - leader_offset_start;
+		if (follower_gap) {
+			// Follower missing or starts within leader but
+			// after a gap.  Pad it with missing EC.
+			follower.set_ec(new Eclass(follower.get_tokid(),
+				    follower_gap));
+			follower.advance();	// ... to gap start.
+			if (DP())
+				cout << "Pad follower to: " << follower << "\n";
+		}
+		if (ec == nullptr) {
+			if (DP())
+				cout << "No follower found\n";
+			// End of chain; we're done.
+			leader.advance();
+			if (follower.get_parts_size())
+				Token::unify(leader.get_token(),
+				    follower.get_token());
+			return;
+		}
+
+		follower.set_tokid(ti);
+		follower.set_ec(ec);
+		if (DP())
+			cout << "Set follower EC: " << follower << '\n';
+
+		// We now have a follower.  Assess the two endings.
+		auto cmp = (leader <=> follower);
+		if (cmp < 0) {
+			if (DP())
+				cout << "Leader ends before follower; swap.\n";
+			leader.advance();
+			swap(leader, follower);
+			leader.set_ec();
+		} else if (cmp > 0) {
+			if (DP())
+				cout << "Leader ends after follower.\n";
+			follower.advance();
+		} else {
+			// Both end at the same place; cash-in progress.
+			if (DP())
+				cout << "Leader ends with follower.\n"
+					<< "Leader: " << leader
+					<< "\nFollower: " << follower << '\n';
+			leader.advance();
+			follower.advance();
+			Token::unify(leader.get_token(), follower.get_token());
+			return;
+		}
 	}
-	exit_on_error();
+}
+
+// Unify the ECs of the specified file.
+static void
+unify_file_ecs(int fid, unsigned long max_offset)
+{
+	Tokid cursor(Fileid(fid), 0);
+	Tokid end(Fileid(fid), max_offset);
+
+	if (DP() && max_offset > 0)
+		cout << "unify_file_ecs to " << end;
+	for (cursor = Tokid(Fileid(fid), 0); cursor <= end; cursor++) {
+		Eclass *ec;
+		if ((ec = cursor.check_ec()) != nullptr)
+			unify_chain_ecs(MergeGatherer(ec, cursor));
+		else if ((ec = twin(cursor).check_ec()) != nullptr)
+			unify_chain_ecs(MergeGatherer(ec, twin(cursor)));
+		else
+			continue;
+	}
 }
 
 /*
- * Read and merge tokids and ECs from the original database
- * (sometimes empty) file.
+ * Third, go through all files looking for twins
+ * (possibly of different starting positions and length).
+ * Put together tokens of the same length, and unify them.
+ *
+ * Go through the files rather than the EC map, because the map changes
+ * as tokens get unified.
+ */
+static void
+merge_loaded_eclasses()
+{
+	for (size_t i = 0; i < max_fid_offset.size(); ++i)
+		unify_file_ecs(i, max_fid_offset[i]);
+}
+
+/*
+ * Merge tokids and ECs from the original (sometimes empty) file
+ * and the attached file.
+ * This requires two passes, one on each file.
  */
 void
-Dbtoken::process_eclasses_original(const char *in_path)
+Dbtoken::process_eclasses(const char *original_path,
+    const char *attached_path)
 {
 	Fileid::disable_filedetails();
 	Project::set_current_project("csmerge");
-	add_eclasses_original(in_path);
+
+	// Order is important here.
 	if (DP())
-		cout << "Start merge pass\n";
-	merge_eclasses_original(in_path);
+		cout << "Add attached classes\n";
+	add_eclasses_attached(attached_path);
+	if (DP())
+		cout << "Add original classes\n";
+	add_eclasses_original(original_path);
+
+	if (DP())
+		cout << "Merge loaded ECs\n";
+	merge_loaded_eclasses();
 }
 
 // Output tokids and their equivalence classes to file named f
@@ -514,6 +620,31 @@ next_line:
 	exit_on_error();
 }
 
+
+/*
+ * Simplified version of is_unused.
+ * This can be improved by saving and merging is_declared_unused
+ * attribute and the identical files table.
+ */
+static bool
+is_unused_eclass(Eclass *e)
+{
+	set <Tokid> eclass_tokids;
+
+	for (Tokid ti : e->get_members()) {
+		// Untwin, as twins refer to the same file.
+		if (ti.get_fileid().get_id() < 0)
+			ti = twin(ti);
+		if (DP())
+			cout << "is_unused EC: " << e << "\nTokid: " << ti;
+		eclass_tokids.insert(ti);
+		if (eclass_tokids.size() > 1) {
+			return false;
+		}
+	}
+	return true;
+}
+
 set <Eclass *> Dbtoken::dumped_ids;
 
 // Dump the details of a single identifier
@@ -551,12 +682,7 @@ Dbtoken::dump_id(ostream &of, Eclass *e, const string &name)
 	     e->get_attribute(is_cfunction) << ',' <<
 	     e->get_attribute(is_cscope) << ',' <<
 	     e->get_attribute(is_lscope) << ',' <<
-	     /*
-	      * Simplified version of is_unused.
-	      * This can be improved by saving and merging is_declared_unused
-	      * attribute and the identical files table.
-	      */
-	     (e->get_size() == 1) <<
+	     is_unused_eclass(e) <<
 	     '\n';
 }
 

@@ -92,7 +92,9 @@ YACC=../btyacc/btyacc
 # Compile with CPPFLAGS=-DNO_DP to remove debugpoint support and thereby
 # improve processing throughput.
 CPPFLAGS+=-pipe -Wall -Wextra -Wpedantic -I. -DPREFIX='"$(PREFIX)"'
-CXXFLAGS+=-std=c++17
+CXXFLAGS+=-std=c++20
+# Avoid false-positive warning from GCC 14.2.0
+CXXFLAGS+=-Wno-stringop-overread
 ifdef DEBUG
 # Debug build
 # To get yacc debugging info set YYDEBUG environment variable to 1

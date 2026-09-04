@@ -1,0 +1,57 @@
+# Based on Linux v7.1 merge failure include/net/ieee80211_radiotap.h
+BEGIN SETUP
+# Minimized version of tokens-split-11.rdbu
+tokens:
+fid	foffset	eid
+4436 7914 94437112377584
+4436 7959 94437112377584
+4436 8052 94437112377584
+4436 7994 94437268587488
+4436 7949 94437274461968
+
+ids:
+eid	name
+94437112377584 IEEE80211_RADIOTAP_HE_DATA1_FORMAT_
+94437274461968 SU
+94437268587488 EXT_SU
+
+adb.tokens:
+fid	foffset	eid
+7988 7936 94516133471392
+7988 7981 94516139682176
+
+adb.ids:
+eid	name
+94516133471392 DATA1_FORMAT_SU
+94516139682176 DATA1_FORMAT_EXT_SU
+
+# Map from adjusted local fid to consolidated global fid
+# dbid 5 is the attached one
+# sqlite3 temp-68.db
+# .output tmp/fid-map.txt
+# select * from fileid_to_global_map;
+# awk '{print $1}' tmp/tokens-a.txt | sort -u | join - <(awk -F\| '$1 == 76 {print $2, $3}' tmp/fid-map.txt | sort -k 1,1) >tmp/fid-map-extract
+# awk '{print 5, $2, $1}' tmp/fid-map-extract
+fileid_to_global_map:
+dbid	fid	global_fid
+5 7988 4436
+
+END
+
+# Provide empty but required tables.
+INCLUDE CREATE empty-functionid.sql
+INCLUDE CREATE empty-idproj.sql
+
+# Extend ids with all their fields
+INCLUDE CREATE extend-ids.sql
+
+INCLUDE CREATE eclasses.sql
+
+# Verify that all Tokens have an Equivalence Class
+BEGIN SELECT
+SELECT * FROM Tokens WHERE eid NOT IN (SELECT eid FROM Ids);
+END
+
+BEGIN RESULT
+fid foffset eid
+END

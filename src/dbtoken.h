@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2024 Diomidis Spinellis
+ * (C) Copyright 2024-2026 Diomidis Spinellis
  *
  * This file is part of CScout.
  *
@@ -56,9 +56,8 @@ public:
 		val.clear();
 	}
 
-	// Read/write tokids and their eids from file named f
-	static void add_eclasses_attached(const char *f);
-	static void process_eclasses_original(const char *f);
+	// Read/write tokids and their ECs from the two files
+	static void process_eclasses(const char *original, const char *attached);
 	// Output tokids and their equivalence classes to file named f
 	static void write_eclasses(const char *f);
 

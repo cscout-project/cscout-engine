@@ -124,6 +124,8 @@ Tokid::constituents(int l)
 		return (r);
 	}
 	// Make r be the Tparts of the ECs covering our tokid t
+	if (DP())
+		cout << "constituents loop for len l=" << l << " of Tokid = " << t << "\n";
 	for (;;) {
 		if (DP())
 			cout << "Tokid = " << (e->first) << " Eclass = " << e->second << "\n" << (*(e->second)) << "\n";

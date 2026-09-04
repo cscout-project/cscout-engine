@@ -2730,8 +2730,8 @@ merge_tokens(char **argv)
 	 *   new-idproj-5.csv
 	 *   new-functionid-to-global-map.csv
 	 */
-	Dbtoken::add_eclasses_attached(argv[in_eclasses_attached]);
-	Dbtoken::process_eclasses_original(argv[in_eclasses_original]);
+	Dbtoken::process_eclasses(argv[in_eclasses_original],
+	    argv[in_eclasses_attached]);
 	Dbtoken::read_write_functionids(
 	    argv[in_functionids_attached],
 	    argv[in_functionids_original],
