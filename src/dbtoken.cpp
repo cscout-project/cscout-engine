@@ -309,12 +309,37 @@ merge_eclasses_original(const char *in_path)
 
 		// Assemble tokids into two equal-length tokens to unify
 		Dbtoken original; // -ve fids; same as ti
-		original.add_part(original_ti, ec_original->get_len());
-		int original_len = ec_original->get_len();
-
+		int original_len = 0;
 		Dbtoken attached; // +ve fids
+		int attached_len;
+
+		/*
+		 * Start by covering the complete original identifier.
+		 * Its EC (of length len when read) may have been split into
+		 * smaller ECs by the homogenization of an earlier record;
+		 * e.g. when the identifier's prefix was unified with a
+		 * differently split identifier.  If we only looked at the
+		 * first EC, and this happened to match the attached one,
+		 * the remainder of the identifier would never be unified,
+		 * leaving the attached ECs there unsplit and inconsistent
+		 * with the original (twin) ones.  This results in tokens
+		 * without a corresponding ids record.
+		 */
+		for (;;) {
+			original.add_part(original_ti, ec_original->get_len());
+			original_len += ec_original->get_len();
+			if (original_len >= len)
+				break;
+			original_ti += ec_original->get_len();
+			ec_original = original_ti.check_ec();
+			if (!ec_original) {
+				issue_error(in_path, "Obtain next original EC", original_ti);
+				goto next_line;
+			}
+		}
+
 		attached.add_part(attached_ti, ec_attached->get_len());
-		int attached_len = ec_attached->get_len();
+		attached_len = ec_attached->get_len();
 
 		while (original_len != attached_len) {
 			if (DP()) {
@@ -328,7 +353,7 @@ merge_eclasses_original(const char *in_path)
 				ec_attached = attached_ti.check_ec();
 				if (!ec_attached) {
 					issue_error(in_path, "Obtain next attached EC", attached_ti);
-					original_len = attached_len;
+					goto next_line;
 				}
 				attached.add_part(attached_ti, ec_attached->get_len());
 				attached_len += ec_attached->get_len();
@@ -338,7 +363,7 @@ merge_eclasses_original(const char *in_path)
 				ec_original = original_ti.check_ec();
 				if (!ec_original) {
 					issue_error(in_path, "Obtain next original EC", original_ti);
-					attached_len = original_len;
+					goto next_line;
 				}
 				original.add_part(original_ti, ec_original->get_len());
 				original_len += ec_original->get_len();
@@ -346,6 +371,8 @@ merge_eclasses_original(const char *in_path)
 		}
 
 		unify_and_clear(original, attached);
+next_line:
+		continue;
 	}
 	exit_on_error();
 }

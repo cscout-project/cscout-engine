@@ -1,0 +1,62 @@
+# Same scenario as tokens-split-11.rdbu; verify that every resulting
+# token has a corresponding identifier.
+BEGIN SETUP
+tokens:
+fid	foffset	eid
+1	0	1000
+1	4	1004
+1	10	1000
+1	14	1014
+
+ids:
+eid	name
+1000	abcd
+1004	e
+1014	fg
+
+adb.tokens:
+fid	foffset	eid
+2	0	100
+2	2	102
+2	10	100
+2	12	112
+
+adb.ids:
+eid	name
+100	ab
+102	cde
+112	cdfg
+
+# Map from adjusted local fid to consolidated global fid
+fileid_to_global_map:
+dbid	fid	global_fid
+2	1	1
+5	2	1
+5	9	2
+END
+
+# Provide empty but required tables.
+INCLUDE CREATE empty-functionid.sql
+INCLUDE CREATE empty-idproj.sql
+
+# Extend ids with all their fields
+INCLUDE CREATE extend-ids.sql
+
+INCLUDE CREATE eclasses.sql
+
+BEGIN SELECT
+  SELECT fid, foffset, name
+    FROM tokens
+    LEFT JOIN ids USING(eid)
+    ORDER BY foffset;
+END
+
+BEGIN RESULT
+fid	foffset	name
+1	0	ab
+1	2	cd
+1	4	e
+1	10	ab
+1	12	cd
+1	14	fg
+END

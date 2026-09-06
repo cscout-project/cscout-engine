@@ -8,7 +8,7 @@
 
 -- Remove any temporary output files, so that tests won't read previous ones
 -- if CScout fails and the script bails out early.
-.shell rm -f ././new-eclasses-5.csv ././new-ids-5.csv ././new-functionid-5.csv ././new-idproj-5.csv ././functionid-to-global-map-5.csv
+.shell rm -f ././command-status-5.txt ././new-eclasses-5.csv ././new-ids-5.csv ././new-functionid-5.csv ././new-idproj-5.csv ././functionid-to-global-map-5.csv
 
 -- A map from eids to an arbitrary identifying tokid
 
@@ -134,10 +134,10 @@ SELECT 5 AS dbid, fid, foffset, ai.*
 -- are from the attached database.
 -- Write out exit code to verify it.  (SQLite's .bail doesn't fail
 -- on non-zero shell commands.)  Avoid $? as this doesn't work reliably.
-.shell sh -c 'if cscout -M ././eclasses-a-5.txt ././eclasses-o-5.txt ././ids-5.txt ././functionid-a-5.txt ././functionid-o-5.txt ././idproj-5.txt ././new-eclasses-5.csv ././new-ids-5.csv ././new-functionid-5.csv ././new-idproj-5.csv ././functionid-to-global-map-5.csv ; then echo 0 ; else echo 1 ; fi >5.command-status'
+.shell sh -c 'if cscout -M ././eclasses-a-5.txt ././eclasses-o-5.txt ././ids-5.txt ././functionid-a-5.txt ././functionid-o-5.txt ././idproj-5.txt ././new-eclasses-5.csv ././new-ids-5.csv ././new-functionid-5.csv ././new-idproj-5.csv ././functionid-to-global-map-5.csv ; then echo 0 ; else echo 1 ; fi >././command-status-5.txt'
 
 -- Due to integrity check this will fail and bail out on failures
-.import 5.command-status command_status
+.import ././command-status-5.txt command_status
 
 DELETE FROM tokens;
 DELETE FROM ids;
@@ -154,7 +154,7 @@ DELETE FROM functionid_to_global_map;
 .mode list
 
 -- Remove temporary files
-.shell rm ././eclasses-a-5.txt ././eclasses-o-5.txt ././ids-5.txt ././functionid-a-5.txt ././functionid-o-5.txt ././idproj-5.txt ././new-eclasses-5.csv ././new-ids-5.csv ././new-functionid-5.csv ././new-idproj-5.csv ././functionid-to-global-map-5.csv
+.shell rm ././command-status-5.txt ././eclasses-a-5.txt ././eclasses-o-5.txt ././ids-5.txt ././functionid-a-5.txt ././functionid-o-5.txt ././idproj-5.txt ././new-eclasses-5.csv ././new-ids-5.csv ././new-functionid-5.csv ././new-idproj-5.csv ././functionid-to-global-map-5.csv
 -- Drop temporary tables
 DROP TABLE aeid_to_tokid_map;
 DROP TABLE eid_to_tokid_map;
