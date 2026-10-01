@@ -19,7 +19,7 @@
 # along with CScout.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-# cscoco.py -- generate a CScout workspace file from
+# cscoco.py -- generate a CScout processing script from
 # a compile_commands.json compilation database.
 #
 
@@ -103,7 +103,7 @@ def parse_flags(entry):
 def generate_cs(compile_commands_file, project_name):
     """
     Read compile_commands.json from a file object and print the corresponding
-    CScout workspace file to standard output.
+    CScout processing script to standard output.
 
     Each C translation unit in the compilation database becomes a
     block in the .cs file that sets up the preprocessor environment
@@ -188,7 +188,7 @@ def generate_cs(compile_commands_file, project_name):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Generate a CScout workspace file from a compile_commands.json compilation database.')
+        description='Generate a CScout processing script from a compile_commands.json compilation database.')
     parser.add_argument('compile_commands',
                         nargs='?',
                         type=argparse.FileType('r', encoding='utf-8'),
