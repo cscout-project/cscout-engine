@@ -1,4 +1,4 @@
-<a href="https://github.com/dspinellis/cscout"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/365986a132ccd6a44c23a9169022c0b5c890c387/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f7265645f6161303030302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png"></a>
+<a href="https://github.com/cscout-project/"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/365986a132ccd6a44c23a9169022c0b5c890c387/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f7265645f6161303030302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png"></a>
 <em>CScout</em> is a source code analyzer and refactoring browser for
 collections of C programs.
 It can process workspaces of multiple projects (we define a project
@@ -25,23 +25,26 @@ tens of thousands of lines,
 like the <a href="http://httpd.apache.org/">Apache web server</a>, to millions of
 lines, like the <a href="http://www.linux.org">Linux</a>, the <a href="http://www.freebsd.org">FreeBSD</a>, and the <a href="http://www.microsoft.com/resources/sharedsource/licensing/researchkernel.mspx">Windows Research</a> kernels.
 With <em>CScout</em> you can make your hardware really work for its money.
-For example, processing the 2.6.11 Linux kernel (4.2 million lines of code)
-requires 4052MB of RAM and 4.7 hours of processing on a
-dual-CPU 2.2GHz AMD Opteron computer.
-After the processing <em>CScout</em> holds details on 1.1 million identifiers and 89 thousand
-functions and function-like macros.
+For example, processing the 7.1 Linux kernel
+for five popular CPU architectures and <code>allyesconfig</code> configuration
+(32 out of 36 million lines of code)
+consumed 102 days of CPU time over a period of 53 hours
+on a 96-core CPU with 256 GB or RAM.
+The result of this processing is a
+<a href="https://doi.org/10.5281/zenodo.21891980">167 GiB SQLite database</a>
+holding details about 11 million identifiers, including 5.5 million macros,
+mapped to 47 million identifier tokens.
 <br />
 <a href="doc/intro.html">Read more ...</a>,
 <a href="doc/walk.html">walkthrough</a>
 (<em>CScout</em> documentation).
 <p />
 The source code of CScout is hosted on
-<a href="https://github.com/dspinellis/cscout">GitHub</a>.
+<a href="https://github.com/cscout-project/">GitHub</a>.
 <p />
 <em>CScout</em> runs and has been tested under
 <a href="http://www.linux.org">GNU/Linux</a>,
 <a href="http://www.microsoft.com">Microsoft Windows</a>,
-<a href="http://www.apple.com/macosx">Apple OS X</a>,
-<a href="http://www.freebsd.org">FreeBSD</a>, and
-<a href="http://www.sun.com/software/solaris/">Sun Solaris</a>,
+<a href="http://www.apple.com/macosx">Apple macOS</a>, and
+<a href="http://www.freebsd.org">FreeBSD</a>,
 under several processor architectures.
