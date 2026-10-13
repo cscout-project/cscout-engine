@@ -20,7 +20,7 @@ do
 		source=$file
 		cat $file
 	fi
-	sed "s,XDATE,`ident $source | gawk '{printf "%s %s", $4, $5}'`," bottom.html
+        sed "s,XDATE,`git log -1 --format='%ad (%h)' --date=short -- "$source"`," bottom.html
 	) >build/$base.html
-	xml val -d /pub/schema/xhtml1-transitional.dtd build/$base.html
+	xml val -d d:/pub/schema/xhtml1-transitional.dtd build/$base.html
 done
