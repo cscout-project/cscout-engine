@@ -1222,17 +1222,19 @@ class Handler(BaseHTTPRequestHandler):
                 JOIN FILES f1 ON i.BASEFILEID = f1.FID
                 JOIN FILES f2 ON i.INCLUDERID = f2.FID
                 WHERE f1.RO = 0 AND f2.RO = 0
-                AND f2.NAME NOT LIKE '%.cs'
             """).fetchall()
+            all_files = conn.execute(
+                "SELECT NAME FROM FILES WHERE RO = 0").fetchall()
         else:
             rows = conn.execute("""
                 SELECT DISTINCT f1.NAME AS SRC, f2.NAME AS DST
                 FROM INCLUDERS i
                 JOIN FILES f1 ON i.BASEFILEID = f1.FID
                 JOIN FILES f2 ON i.INCLUDERID = f2.FID
-                WHERE f2.NAME NOT LIKE '%.cs'
             """).fetchall()
-        self._send_file_graph_svg(rows, "File include graph")
+            all_files = conn.execute("SELECT NAME FROM FILES").fetchall()
+        self._send_file_graph_svg(rows, "File include graph",
+            [r["NAME"] for r in all_files])
 
     def handle_filegraph_compile(self, conn, qs):
         """Compile-time dependency graph via graphviz.
@@ -1252,6 +1254,8 @@ class Handler(BaseHTTPRequestHandler):
                 JOIN FILES f2 ON d.DEFINERID = f2.FID
                 WHERE f1.RO = 0 AND f2.RO = 0
             """).fetchall()
+            all_files = conn.execute(
+                "SELECT NAME FROM FILES WHERE RO = 0").fetchall()
         else:
             rows = conn.execute("""
                 SELECT DISTINCT f2.NAME AS SRC, f1.NAME AS DST
@@ -1259,7 +1263,9 @@ class Handler(BaseHTTPRequestHandler):
                 JOIN FILES f1 ON d.BASEFILEID = f1.FID
                 JOIN FILES f2 ON d.DEFINERID = f2.FID
             """).fetchall()
-        self._send_file_graph_svg(rows, "Compile-time dependency graph")
+            all_files = conn.execute("SELECT NAME FROM FILES").fetchall()
+        self._send_file_graph_svg(rows, "Compile-time dependency graph",
+            [r["NAME"] for r in all_files])
 
     def handle_filegraph_control(self, conn, qs):
         """Control dependency graph (through function calls) via graphviz.
@@ -1281,6 +1287,8 @@ class Handler(BaseHTTPRequestHandler):
                 JOIN FILES f2 ON fn2.FID = f2.FID
                 WHERE f1.FID != f2.FID AND f1.RO = 0 AND f2.RO = 0
             """).fetchall()
+            all_files = conn.execute(
+                "SELECT NAME FROM FILES WHERE RO = 0").fetchall()
         else:
             rows = conn.execute("""
                 SELECT DISTINCT f2.NAME AS SRC, f1.NAME AS DST
@@ -1291,7 +1299,9 @@ class Handler(BaseHTTPRequestHandler):
                 JOIN FILES f2 ON fn2.FID = f2.FID
                 WHERE f1.FID != f2.FID
             """).fetchall()
-        self._send_file_graph_svg(rows, "Control dependency graph")
+            all_files = conn.execute("SELECT NAME FROM FILES").fetchall()
+        self._send_file_graph_svg(rows, "Control dependency graph",
+            [r["NAME"] for r in all_files])
 
     def handle_filegraph_data(self, conn, qs):
         """Data dependency graph (through global variables) via graphviz.
@@ -1330,6 +1340,8 @@ class Handler(BaseHTTPRequestHandler):
                 WHERE i.ORDINARY = 1 AND i.FUN = 0 AND i.READONLY = 0
                 AND f1.RO = 0 AND f2.RO = 0
             """).fetchall()
+            all_files = conn.execute(
+                "SELECT NAME FROM FILES WHERE RO = 0").fetchall()
         else:
             rows = conn.execute("""
                 SELECT DISTINCT f1.NAME AS SRC, f2.NAME AS DST
@@ -1340,21 +1352,17 @@ class Handler(BaseHTTPRequestHandler):
                 JOIN FILES f2 ON t2.FID = f2.FID
                 WHERE i.ORDINARY = 1 AND i.FUN = 0 AND i.READONLY = 0
             """).fetchall()
-        self._send_file_graph_svg(rows, "Data dependency graph")
+            all_files = conn.execute("SELECT NAME FROM FILES").fetchall()
+        self._send_file_graph_svg(rows, "Data dependency graph",
+            [r["NAME"] for r in all_files])
 
-    def _send_file_graph_svg(self, rows, title):
+    def _send_file_graph_svg(self, rows, title, all_file_names=()):
         """Generate and send a graphviz SVG for file dependency edges.
 
-        TODO: some nodes or edges the real CScout web UI shows are
-        missing from graphs rendered here, for at least some of
-        include/compile/control/data. Not root caused yet, comparing
-        the join logic against CScout's own source didn't turn up a
-        clear cause on its own. Need to actually generate the same
-        graph (same project, same graph type, same writable/all toggle)
-        in both the real CScout web UI and here, and diff the node and
-        edge lists directly, before there's anything concrete to fix.
+        all_file_names makes sure every file gets a node, even ones
+        with no edges.
         """
-        if not rows:
+        if not rows and not all_file_names:
             html = f"""<!doctype html><html><body style="font-family:sans-serif;padding:2em">
                 <p>No dependencies found.</p></body></html>"""
             body = html.encode("utf-8")
@@ -1373,6 +1381,15 @@ class Handler(BaseHTTPRequestHandler):
             '\tedge [fontsize=8, color="#aaaaaa", arrowsize=0.8];',
         ]
         seen = set()
+        for name in all_file_names:
+            name = os.path.basename(name)
+            if name in seen:
+                continue
+            seen.add(name)
+            if name.endswith('.h'):
+                dot_lines.append(f'\t"{name}" [fillcolor="#3a6fa8", style=filled, fontcolor=white];')
+            else:
+                dot_lines.append(f'\t"{name}" [fillcolor="#2d6b40", style=filled, fontcolor=white];')
         for row in rows:
             src = os.path.basename(row["SRC"])
             dst = os.path.basename(row["DST"])
