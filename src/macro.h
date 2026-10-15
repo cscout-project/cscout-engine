@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2001-2024 Diomidis Spinellis
+ * (C) Copyright 2001-2026 Diomidis Spinellis
  *
  * This file is part of CScout.
  *
@@ -74,10 +74,10 @@ public:
 	};
 private:
 	Ptoken name_token;		// Name (used for unification)
-	bool is_function;		// True if it is a function-macro
-	bool is_immutable;		// Cannot be redefined or undefined
-	bool is_vararg;			// True if the function has variable # of arguments (gcc)
-	bool is_defined;		// True if the macro has been defined
+	bool is_function_;		// True if it is a function-macro
+	bool is_immutable_;		// Cannot be redefined or undefined
+	bool is_vararg_;			// True if the function has variable # of arguments (gcc)
+	bool is_defined_;		// True if the macro has been defined
 					// Can be false through ifdef/ifndef/defined()
 	dequePtoken formal_args;	// Formal arguments (names)
 	dequePtoken value;		// Macro value
@@ -86,12 +86,12 @@ public:
 	Macro( const Ptoken& name, bool id, bool is_function, bool is_immutable);
 	// Accessor functions
 	const Ptoken& get_name_token() const {return name_token; };
-	void set_is_function(bool v) { is_function = v; };
-	bool get_is_function() const { return is_function; };
-	void set_is_vararg(bool v) { is_vararg = v; };
-	bool get_is_defined() const { return is_defined; };
-	bool get_is_vararg() const { return is_vararg; };
-	bool get_is_immutable() const { return is_immutable; };
+	void set_is_function(bool v) { is_function_ = v; };
+	bool is_function() const { return is_function_; };
+	void set_is_vararg(bool v) { is_vararg_ = v; };
+	bool is_defined() const { return is_defined_; };
+	bool is_vararg() const { return is_vararg_; };
+	bool is_immutable() const { return is_immutable_; };
 	const dequePtoken& get_formal_args() const { return formal_args; }
 	const string get_name() const { return name_token.get_val(); }
 	// Return the number of formal arguments

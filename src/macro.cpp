@@ -61,7 +61,7 @@ register_call(const Macro *substitutor, const Ptoken &substituted)
 		    << "substituted: " << substituted;
 
 	const Macro *caller = substituted.get_producer();
-	if (caller && caller->get_is_function())
+	if (caller && caller->is_function())
 		// Macro to macro call
 		Call::register_call(caller->get_mcall(), substitutor->get_mcall());
 	else
@@ -138,7 +138,7 @@ gather_args(const Macro *collector, PtokenSequence& tokens, mapArgval& args, boo
 		char terminate;
 		if (i + 1 == formal_args.end())
 			terminate = ')';
-		else if (collector->get_is_vararg() && i + 2 == formal_args.end())
+		else if (collector->is_vararg() && i + 2 == formal_args.end())
 			terminate = '.';	// Vararg last argument is optional; terminate with ) or ,
 		else
 			terminate = ',';
@@ -387,7 +387,7 @@ space_eq(Ptoken& a, Ptoken& b)
 bool
 operator ==(const Macro& a, const Macro& b)
 {
-	if (a.is_function != b.is_function || a.formal_args != b.formal_args)
+	if (a.is_function() != b.is_function() || a.formal_args != b.formal_args)
 		return false;
 
 	// Remove consecutive spaces
@@ -411,7 +411,7 @@ operator<<(ostream& o,const Macro &m)
 {
 	o << nest_begin("Macro: {")
 		<< nest("name") << m.name_token.get_val() << '\n';
-	if (m.is_function) {
+	if (m.is_function()) {
 		o << nest("function") << "true" << '\n';
 		o << nest("args");
 		for (dequePtoken::const_iterator i = m.formal_args.begin(); i != m.formal_args.end(); i++)
@@ -440,10 +440,10 @@ Macro::register_macro_body(mapMacroBody &map) const
 // Constructor
 Macro::Macro( const Ptoken& name, bool id, bool isfun, bool isimmutable) :
 	name_token(name),
-	is_function(isfun),
-	is_immutable(isimmutable),
-	is_vararg(false),
-	is_defined(id)
+	is_function_(isfun),
+	is_immutable_(isimmutable),
+	is_vararg_(false),
+	is_defined_(id)
 {
 	if (isfun) {
 		Token uname(name.unique());	// Take care of identical files
@@ -606,7 +606,7 @@ macro_expand(PtokenSequence ts,
 				<< nest_end("]");
 		expanded_macros.insert(m);
 		PtokenSequence removed_spaces;
-		if (!m.is_function) {
+		if (!m.is_function()) {
 			// Object-like macro
 			if (DP())
 				cout << "macro_expand: expanding object-like " << m;
@@ -737,7 +737,7 @@ subst(const Macro &m, const mapArgval &args, HideSet hs, bool skip_defined, Macr
 				 * argument has any tokens, otherwise it expands
 				 * to empty.
 				 */
-				if (!m.get_is_vararg()) {
+				if (!m.is_vararg()) {
 					/*
 					 * @error
 					 * The macro body of a non variadic
@@ -766,7 +766,7 @@ subst(const Macro &m, const mapArgval &args, HideSet hs, bool skip_defined, Macr
 				 * argument in the default way
 				 */
 				if (head.get_code() == ','
-				    && m.get_is_vararg()) {
+				    && m.is_vararg()) {
 					ti2 = find_nonspace(ti + 1, is.end());
 					if (ti2 != is.end() && (ai = find_formal_argument(args, *ti2)) != args.end() && ai->second.size() == 0) {
 						// All conditions satisfied; discard elements:

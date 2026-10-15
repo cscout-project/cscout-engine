@@ -1122,7 +1122,7 @@ Pdtoken::process_define(bool is_immutable)
 	// Check that the new macro is undefined or not different from an older definition
 	mapMacro::const_iterator i = macros.find(name);
 	if (i != macros.end()) {
-		if ((*i).second.get_is_defined() && i->second != m) {
+		if ((*i).second.is_defined() && i->second != m) {
 			/*
 			 * @error
 			 * A defined macro can be redefined only if the
@@ -1147,7 +1147,7 @@ Pdtoken::process_define(bool is_immutable)
 	mapMacro::iterator mi = macros.find(name);
 	if (mi == macros.end())
 		macros.insert(mapMacro::value_type(name, m));
-	else if (!mi->second.get_is_immutable())
+	else if (!mi->second.is_immutable())
 		mi->second = m;
 
 	if (is_function) {
@@ -1181,7 +1181,7 @@ Pdtoken::process_undef()
 	if ((mi = Pdtoken::macros.find(t.get_val())) != Pdtoken::macros.end()) {
 		Token::unify((*mi).second.get_name_token(), t);
 		t.set_ec_attribute(is_undefed_macro);
-		if (!(*mi).second.get_is_immutable())
+		if (!(*mi).second.is_immutable())
 			Pdtoken::macros.erase(mi);
 	}
 	eat_to_eol();
