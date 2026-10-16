@@ -1222,17 +1222,19 @@ class Handler(BaseHTTPRequestHandler):
                 JOIN FILES f1 ON i.BASEFILEID = f1.FID
                 JOIN FILES f2 ON i.INCLUDERID = f2.FID
                 WHERE f1.RO = 0 AND f2.RO = 0
-                AND f2.NAME NOT LIKE '%.cs'
             """).fetchall()
+            all_files = conn.execute(
+                "SELECT NAME FROM FILES WHERE RO = 0").fetchall()
         else:
             rows = conn.execute("""
                 SELECT DISTINCT f1.NAME AS SRC, f2.NAME AS DST
                 FROM INCLUDERS i
                 JOIN FILES f1 ON i.BASEFILEID = f1.FID
                 JOIN FILES f2 ON i.INCLUDERID = f2.FID
-                WHERE f2.NAME NOT LIKE '%.cs'
             """).fetchall()
-        self._send_file_graph_svg(rows, "File include graph")
+            all_files = conn.execute("SELECT NAME FROM FILES").fetchall()
+        self._send_file_graph_svg(rows, "File include graph",
+            [r["NAME"] for r in all_files])
 
     def handle_filegraph_compile(self, conn, qs):
         """Compile-time dependency graph via graphviz.
@@ -1252,6 +1254,8 @@ class Handler(BaseHTTPRequestHandler):
                 JOIN FILES f2 ON d.DEFINERID = f2.FID
                 WHERE f1.RO = 0 AND f2.RO = 0
             """).fetchall()
+            all_files = conn.execute(
+                "SELECT NAME FROM FILES WHERE RO = 0").fetchall()
         else:
             rows = conn.execute("""
                 SELECT DISTINCT f2.NAME AS SRC, f1.NAME AS DST
@@ -1259,7 +1263,9 @@ class Handler(BaseHTTPRequestHandler):
                 JOIN FILES f1 ON d.BASEFILEID = f1.FID
                 JOIN FILES f2 ON d.DEFINERID = f2.FID
             """).fetchall()
-        self._send_file_graph_svg(rows, "Compile-time dependency graph")
+            all_files = conn.execute("SELECT NAME FROM FILES").fetchall()
+        self._send_file_graph_svg(rows, "Compile-time dependency graph",
+            [r["NAME"] for r in all_files])
 
     def handle_filegraph_control(self, conn, qs):
         """Control dependency graph (through function calls) via graphviz.
@@ -1281,6 +1287,8 @@ class Handler(BaseHTTPRequestHandler):
                 JOIN FILES f2 ON fn2.FID = f2.FID
                 WHERE f1.FID != f2.FID AND f1.RO = 0 AND f2.RO = 0
             """).fetchall()
+            all_files = conn.execute(
+                "SELECT NAME FROM FILES WHERE RO = 0").fetchall()
         else:
             rows = conn.execute("""
                 SELECT DISTINCT f2.NAME AS SRC, f1.NAME AS DST
@@ -1291,70 +1299,54 @@ class Handler(BaseHTTPRequestHandler):
                 JOIN FILES f2 ON fn2.FID = f2.FID
                 WHERE f1.FID != f2.FID
             """).fetchall()
-        self._send_file_graph_svg(rows, "Control dependency graph")
+            all_files = conn.execute("SELECT NAME FROM FILES").fetchall()
+        self._send_file_graph_svg(rows, "Control dependency graph",
+            [r["NAME"] for r in all_files])
 
     def handle_filegraph_data(self, conn, qs):
         """Data dependency graph (through global variables) via graphviz.
 
-        TODO: this can't tell which file actually defines a global
-        variable and which file just uses it. All it knows is that two
-        files mention the same variable name, so it draws the
-        connection both ways every time, there is no real direction
-        here yet.
-
-        CScout itself does know the difference, but only while it is
-        running, in memory (see the mark_runtime_use function in
-        cscout/src/globobj.cpp). It never saves that information to the
-        database.
-
-        To fix this properly:
-          1. In CScout's C++ code, add a new database table that saves
-             this define-versus-use information, the same way file
-             includes already get saved in the DEFINERS and INCLUDERS
-             tables.
-          2. Regenerate the database for any project being tested
-             against, old databases won't have the new table.
-          3. Rewrite this query to read that new table directly,
-             instead of guessing from which files happen to mention the
-             same variable name.
+        DEFFID is the file that defines the variable, USEFID is a file
+        that uses it.
         """
+        has_table = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'GLOBUSES'").fetchone()
+        if has_table is None:
+            self.send_error_json(404,
+                "This database has no GLOBUSES table, "
+                "regenerate it with a newer CScout")
+            return
+
         writable_only = get_bool_param(qs, "writable")
         if writable_only:
             rows = conn.execute("""
                 SELECT DISTINCT f1.NAME AS SRC, f2.NAME AS DST
-                FROM TOKENS t1
-                JOIN TOKENS t2 ON t1.EID = t2.EID AND t1.FID != t2.FID
-                JOIN IDS i ON i.EID = t1.EID
-                JOIN FILES f1 ON t1.FID = f1.FID
-                JOIN FILES f2 ON t2.FID = f2.FID
-                WHERE i.ORDINARY = 1 AND i.FUN = 0 AND i.READONLY = 0
-                AND f1.RO = 0 AND f2.RO = 0
+                FROM GLOBUSES g
+                JOIN FILES f1 ON g.DEFFID = f1.FID
+                JOIN FILES f2 ON g.USEFID = f2.FID
+                WHERE f1.RO = 0 AND f2.RO = 0
             """).fetchall()
+            all_files = conn.execute(
+                "SELECT NAME FROM FILES WHERE RO = 0").fetchall()
         else:
             rows = conn.execute("""
                 SELECT DISTINCT f1.NAME AS SRC, f2.NAME AS DST
-                FROM TOKENS t1
-                JOIN TOKENS t2 ON t1.EID = t2.EID AND t1.FID != t2.FID
-                JOIN IDS i ON i.EID = t1.EID
-                JOIN FILES f1 ON t1.FID = f1.FID
-                JOIN FILES f2 ON t2.FID = f2.FID
-                WHERE i.ORDINARY = 1 AND i.FUN = 0 AND i.READONLY = 0
+                FROM GLOBUSES g
+                JOIN FILES f1 ON g.DEFFID = f1.FID
+                JOIN FILES f2 ON g.USEFID = f2.FID
             """).fetchall()
-        self._send_file_graph_svg(rows, "Data dependency graph")
+            all_files = conn.execute("SELECT NAME FROM FILES").fetchall()
+        self._send_file_graph_svg(rows, "Data dependency graph",
+            [r["NAME"] for r in all_files])
 
-    def _send_file_graph_svg(self, rows, title):
+    def _send_file_graph_svg(self, rows, title, all_file_names=()):
         """Generate and send a graphviz SVG for file dependency edges.
 
-        TODO: some nodes or edges the real CScout web UI shows are
-        missing from graphs rendered here, for at least some of
-        include/compile/control/data. Not root caused yet, comparing
-        the join logic against CScout's own source didn't turn up a
-        clear cause on its own. Need to actually generate the same
-        graph (same project, same graph type, same writable/all toggle)
-        in both the real CScout web UI and here, and diff the node and
-        edge lists directly, before there's anything concrete to fix.
+        all_file_names makes sure every file gets a node, even ones
+        with no edges.
         """
-        if not rows:
+        if not rows and not all_file_names:
             html = f"""<!doctype html><html><body style="font-family:sans-serif;padding:2em">
                 <p>No dependencies found.</p></body></html>"""
             body = html.encode("utf-8")
@@ -1373,6 +1365,15 @@ class Handler(BaseHTTPRequestHandler):
             '\tedge [fontsize=8, color="#aaaaaa", arrowsize=0.8];',
         ]
         seen = set()
+        for name in all_file_names:
+            name = os.path.basename(name)
+            if name in seen:
+                continue
+            seen.add(name)
+            if name.endswith('.h'):
+                dot_lines.append(f'\t"{name}" [fillcolor="#3a6fa8", style=filled, fontcolor=white];')
+            else:
+                dot_lines.append(f'\t"{name}" [fillcolor="#2d6b40", style=filled, fontcolor=white];')
         for row in rows:
             src = os.path.basename(row["SRC"])
             dst = os.path.basename(row["DST"])

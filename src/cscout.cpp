@@ -2872,6 +2872,7 @@ main(int argc, char *argv[])
 		workdb_rest(Sql::getInterface(), cout);
 		workdb_metadata(Sql::getInterface(), cout, engine.get_input_file_path());
 		Call::dumpSql(Sql::getInterface(), cout);
+		GlobObj::dumpSql(Sql::getInterface(), cout);
 		cout << Sql::getInterface()->end_commands();
 #ifdef LINUX_STAT_MONITOR
 		char buff[100];

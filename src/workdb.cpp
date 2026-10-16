@@ -103,6 +103,7 @@ table_enable(const char *name)
 		table_enum["FCALLS"] = t_fcalls;
 		table_enum["FILECOPIES"] = t_filecopies;
 		table_enum["METADATA"] = t_metadata;
+		table_enum["GLOBUSES"] = t_globuses;
 
 		initialized = true;
 	}
@@ -714,6 +715,15 @@ workdb_schema(Sql *db, ostream &of)
 		"CREATE TABLE METADATA(\n"
 		"  KEY " << db->varchar() << " PRIMARY KEY, -- Metadata key\n"
 		"  VALUE " << db->varchar() << " -- Metadata value\n"
+		");\n";
+
+	if (table_is_enabled(t_globuses)) of <<
+		"\n\n-- Files using a global variable defined in another file\n"
+		"CREATE TABLE GLOBUSES(\n"
+		"  DEFFID INTEGER, -- File key of the file defining the variable\n"
+		"  USEFID INTEGER, -- File key of the file using the variable\n"
+		"  FOREIGN KEY(DEFFID) REFERENCES FILES(FID),\n"
+		"  FOREIGN KEY(USEFID) REFERENCES FILES(FID)\n"
 		");\n";
 }
 

@@ -426,6 +426,8 @@ paths:
             text/html:
               schema:
                 type: string
+        '404':
+          description: Database has no GLOBUSES table (created by an older CScout)
 
   /functions:
     get:
