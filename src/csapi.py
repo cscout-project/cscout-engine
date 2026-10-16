@@ -1306,51 +1306,35 @@ class Handler(BaseHTTPRequestHandler):
     def handle_filegraph_data(self, conn, qs):
         """Data dependency graph (through global variables) via graphviz.
 
-        TODO: this can't tell which file actually defines a global
-        variable and which file just uses it. All it knows is that two
-        files mention the same variable name, so it draws the
-        connection both ways every time, there is no real direction
-        here yet.
-
-        CScout itself does know the difference, but only while it is
-        running, in memory (see the mark_runtime_use function in
-        cscout/src/globobj.cpp). It never saves that information to the
-        database.
-
-        To fix this properly:
-          1. In CScout's C++ code, add a new database table that saves
-             this define-versus-use information, the same way file
-             includes already get saved in the DEFINERS and INCLUDERS
-             tables.
-          2. Regenerate the database for any project being tested
-             against, old databases won't have the new table.
-          3. Rewrite this query to read that new table directly,
-             instead of guessing from which files happen to mention the
-             same variable name.
+        DEFFID is the file that defines the variable, USEFID is a file
+        that uses it.
         """
+        has_table = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+            "AND name = 'GLOBUSES'").fetchone()
+        if has_table is None:
+            self.send_error_json(404,
+                "This database has no GLOBUSES table, "
+                "regenerate it with a newer CScout")
+            return
+
         writable_only = get_bool_param(qs, "writable")
         if writable_only:
             rows = conn.execute("""
                 SELECT DISTINCT f1.NAME AS SRC, f2.NAME AS DST
-                FROM TOKENS t1
-                JOIN TOKENS t2 ON t1.EID = t2.EID AND t1.FID != t2.FID
-                JOIN IDS i ON i.EID = t1.EID
-                JOIN FILES f1 ON t1.FID = f1.FID
-                JOIN FILES f2 ON t2.FID = f2.FID
-                WHERE i.ORDINARY = 1 AND i.FUN = 0 AND i.READONLY = 0
-                AND f1.RO = 0 AND f2.RO = 0
+                FROM GLOBUSES g
+                JOIN FILES f1 ON g.DEFFID = f1.FID
+                JOIN FILES f2 ON g.USEFID = f2.FID
+                WHERE f1.RO = 0 AND f2.RO = 0
             """).fetchall()
             all_files = conn.execute(
                 "SELECT NAME FROM FILES WHERE RO = 0").fetchall()
         else:
             rows = conn.execute("""
                 SELECT DISTINCT f1.NAME AS SRC, f2.NAME AS DST
-                FROM TOKENS t1
-                JOIN TOKENS t2 ON t1.EID = t2.EID AND t1.FID != t2.FID
-                JOIN IDS i ON i.EID = t1.EID
-                JOIN FILES f1 ON t1.FID = f1.FID
-                JOIN FILES f2 ON t2.FID = f2.FID
-                WHERE i.ORDINARY = 1 AND i.FUN = 0 AND i.READONLY = 0
+                FROM GLOBUSES g
+                JOIN FILES f1 ON g.DEFFID = f1.FID
+                JOIN FILES f2 ON g.USEFID = f2.FID
             """).fetchall()
             all_files = conn.execute("SELECT NAME FROM FILES").fetchall()
         self._send_file_graph_svg(rows, "Data dependency graph",

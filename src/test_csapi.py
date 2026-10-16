@@ -21,6 +21,7 @@
 
 import json
 import os
+import shutil
 import sqlite3
 import subprocess
 import tempfile
@@ -242,6 +243,45 @@ class TestCsapi(unittest.TestCase):
         self.assertGreater(len(data), 0)
         self.assertTrue(any(a["id"] == "NLINE" for a in data))
         self.assertTrue(any(a["id"] == "NSTMT" for a in data))
+
+    def test_filegraph_data(self):
+        if shutil.which("dot") is None:
+            self.skipTest("graphviz dot is not installed")
+        conn = sqlite3.connect(self.db_path)
+        definer = conn.execute(
+            "SELECT NAME FROM FILES WHERE FID = ?", (self.fid_sample,)).fetchone()[0]
+        other_fid, user = conn.execute(
+            "SELECT FID, NAME FROM FILES WHERE FID != ? LIMIT 1",
+            (self.fid_sample,)).fetchone()
+        conn.execute("INSERT INTO GLOBUSES VALUES(?, ?)",
+            (self.fid_sample, other_fid))
+        conn.commit()
+        try:
+            with urllib.request.urlopen(self.get_url("/filegraph/data")) as response:
+                svg = response.read().decode("utf-8")
+        finally:
+            conn.execute("DELETE FROM GLOBUSES WHERE DEFFID = ? AND USEFID = ?",
+                (self.fid_sample, other_fid))
+            conn.commit()
+            conn.close()
+        # Graphviz writes a hyphen as &#45; in the SVG
+        src = os.path.basename(definer).replace("-", "&#45;")
+        dst = os.path.basename(user).replace("-", "&#45;")
+        self.assertIn(f"<title>{src}&#45;&gt;{dst}</title>", svg)
+        self.assertNotIn(f"<title>{dst}&#45;&gt;{src}</title>", svg)
+
+    def test_filegraph_data_old_database(self):
+        conn = sqlite3.connect(self.db_path)
+        conn.execute("ALTER TABLE GLOBUSES RENAME TO GLOBUSES_SAVED")
+        conn.commit()
+        try:
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                urllib.request.urlopen(self.get_url("/filegraph/data"))
+            self.assertEqual(ctx.exception.code, 404)
+        finally:
+            conn.execute("ALTER TABLE GLOBUSES_SAVED RENAME TO GLOBUSES")
+            conn.commit()
+            conn.close()
 
 
 class TestCsapiHelpers(unittest.TestCase):

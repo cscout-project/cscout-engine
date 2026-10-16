@@ -55,6 +55,7 @@ enum e_table {
 	t_fcalls,
 	t_filecopies,
 	t_metadata,
+	t_globuses,
 	table_max
 };
 
