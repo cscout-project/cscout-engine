@@ -711,7 +711,6 @@ subst(const Macro &m, const mapArgval &args, HideSet hs, bool skip_defined, Macr
 			if (ti != is.end() && (ai = find_formal_argument(args, *ti)) != args.end()) {
 				is.erase(is.begin(), ++ti);
 				Ptoken str(stringize(ai->second));
-				str.add_producer(&m);
 				os.push_back(str);
 				continue;
 			}
