@@ -48,7 +48,7 @@
 /*
  * Register a call associated with a given macro substituting
  * the specified token.
- * This gives registers a call from the macro that produced the
+ * This registers a call from the macro that produced the
  * token (caller) to the macro substituting the token (callee).
  * If the caller is NULL then a call from the enclosing C
  * function is registered.
@@ -618,6 +618,8 @@ macro_expand(PtokenSequence ts,
 		} else if (fill_in(ts, token_source == Macro::TokenSourceOption::get_more, removed_spaces) && ts.front().get_code() == '(') {
 			// Application of a function-like macro
 			Token::unify((*mi).second.name_token, head);
+			// Register C-function to macro calls with correct
+			// identification of the producer.
 			register_call(&m, head);
 			mapArgval args;			// Map from formal name to value
 
