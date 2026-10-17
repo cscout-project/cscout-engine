@@ -141,7 +141,7 @@ public:
 	}
 };
 
-// A radion selection value represented through a character code
+// A radio selection value represented through a character code
 class SelectionOption : public Option {
 private:
 	char	v;		// The value

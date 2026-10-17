@@ -1930,23 +1930,17 @@ produce_call_graphs(const vector <string> &call_graphs)
 				} else if (!key.compare("nodes")) {
 					Option::print_nodes->set_hard((bool) atoi(val.c_str()));
 				}
-
 			}
-
 		}
 
 		if (!base.compare(gdargskeys.CGRAPH)) {
 			cgraph_page(&gd);
-		}
-		else if (!base.compare(gdargskeys.FGRAPH)) {
+		} else if (!base.compare(gdargskeys.FGRAPH)) {
 			fgraph_page(&gd);
 		}
 
 		fclose(target);
 	}
-
-
-
 }
 
 
@@ -2955,6 +2949,7 @@ main(int argc, char *argv[])
 		cerr << "Producing call graphs for: ";
 		for (string d : opts.call_graphs) cerr << d << " ";
 		cerr << endl;
+		Option::initialize();
 		produce_call_graphs(opts.call_graphs);
 
 		return (0);
