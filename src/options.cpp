@@ -70,7 +70,7 @@ usage(char *fname)
 #endif
 		"\t-C\tCreate a ctags(1)-compatible tags file\n"
 		"\t-c\tProcess the file and exit\n"
-		"\t-R URL\tOutput the call graphs specified by the URLs exit\n"
+		"\t-R URL\tOutput the call graphs specified by the URLs and exit\n"
 		"\t-d D\tOutput the #defines being processed\n"
 		"\t-d H\tOutput the names of included files being processed\n"
 		"\t-E RE\tOutput preprocessed results and exit\n"
