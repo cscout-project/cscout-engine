@@ -30,8 +30,6 @@
 #define __alignof__(x) (sizeof(x) & 0xf)
 #define _Alignof(x) (sizeof(x) & 0xf)
 
-#define _Atomic
-
 /*
  * Atomic builtins
  * https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
