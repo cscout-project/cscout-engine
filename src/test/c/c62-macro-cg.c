@@ -46,6 +46,11 @@ int k = top4();
 #define bottom_middle82() 82
 #define bottom8() 8
 
+#define top9() MIDDLE9a
+#define MIDDLE9a MIDDLE9b
+#define MIDDLE9b bottom9()
+#define bottom9() 9
+
 int
 main()
 {
@@ -56,4 +61,5 @@ main()
 	top6(bottom6, noncalled6);
 	TOP7;
 	top8(bottom_middle8, bottom_middle82, bottom8);
+	top9();
 }

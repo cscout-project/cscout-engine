@@ -459,7 +459,7 @@ Macro::Macro( const Ptoken& name, bool id, bool isfun, bool isimmutable) :
 		mcall = NULL;	// To void nasty surprises
 }
 
-static PtokenSequence subst(const Macro &m, const mapArgval &args, HideSet hs, bool skip_defined, Macro::CalledContext context);
+static PtokenSequence subst(const Macro &m, const mapArgval &args, HideSet hs, bool skip_defined, Macro::CalledContext context, const Macro *producer);
 static PtokenSequence glue(PtokenSequence ls, PtokenSequence rs);
 static bool fill_in(PtokenSequence &ts, bool get_more, PtokenSequence &removed);
 
@@ -613,7 +613,11 @@ macro_expand(PtokenSequence ts,
 			Token::unify((*mi).second.name_token, head);
 			HideSet hs(head.get_hideset());
 			hs.insert(m.get_name_token());
-			PtokenSequence s(subst(m, mapArgval(), hs, operator_handling == Macro::OperatorHandling::skip, context));
+			const Macro *producer = head.get_producer();
+			PtokenSequence s(subst(m,
+				    mapArgval(), hs,
+				    operator_handling == Macro::OperatorHandling::skip,
+				    context, producer ? producer : &m));
 			ts.splice(ts.begin(), s);
 		} else if (fill_in(ts, token_source == Macro::TokenSourceOption::get_more, removed_spaces) && ts.front().get_code() == '(') {
 			// Application of a function-like macro
@@ -634,7 +638,7 @@ macro_expand(PtokenSequence ts,
 				close.get_hideset().begin(), close.get_hideset().end(),
 				inserter(hs, hs.begin()));
 			hs.insert(m.get_name_token());
-			PtokenSequence s(subst(m, args, hs, operator_handling == Macro::OperatorHandling::skip, context));
+			PtokenSequence s(subst(m, args, hs, operator_handling == Macro::OperatorHandling::skip, context, &m));
 			ts.splice(ts.begin(), s);
 		} else {
 			// Function-like macro name lacking a (
@@ -688,7 +692,7 @@ find_nonspace(dequePtoken::iterator pos, dequePtoken::iterator end)
  * hide set and producer macro added to it, before getting returned.
  */
 static PtokenSequence
-subst(const Macro &m, const mapArgval &args, HideSet hs, bool skip_defined, Macro::CalledContext context)
+subst(const Macro &m, const mapArgval &args, HideSet hs, bool skip_defined, Macro::CalledContext context, const Macro *producer)
 {
 	dequePtoken is(m.get_value());// Input sequence
 	PtokenSequence os;	// Output sequence
@@ -826,7 +830,7 @@ subst(const Macro &m, const mapArgval &args, HideSet hs, bool skip_defined, Macr
 	if (DP())
 		cout << "Set producer " << m << "for " << os;
 	for (Ptoken &t : os)
-		t.add_producer(&m);
+		t.add_producer(producer);
 
 	return os;
 }
