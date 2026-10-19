@@ -160,7 +160,6 @@ make_keymap()
 	m["_Static_assert"] = STATIC_ASSERT;
 	m["_Atomic"] = ATOMIC;
 	/* C23 */
-	m["bool"] = BOOL;
 	m["typeof"] = TYPEOF;
 	m["typeof_unqual"] = TYPEOF_UNQUAL;
 	m["constexpr"] = CONSTEXPR;

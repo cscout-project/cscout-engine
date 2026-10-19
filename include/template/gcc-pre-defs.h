@@ -53,13 +53,13 @@
 
 // Compare-and-exchange
 #define __atomic_compare_exchange_n(ptr, expected, desired, weak, succ, fail) ({ \
-    bool __res = (*(ptr) == *(expected));                                       \
+    _Bool __res = (*(ptr) == *(expected));                                       \
     if (__res) *(ptr) = (desired);                                              \
     else *(expected) = *(ptr);                                                  \
     __res;                                                                      \
 })
 #define __atomic_compare_exchange(ptr, expected, desired, weak, succ, fail) ({ \
-    bool __res = (*(ptr) == *(expected));                                      \
+    _Bool __res = (*(ptr) == *(expected));                                      \
     if (__res) *(ptr) = *(desired);                                            \
     else *(expected) = *(ptr);                                                 \
     __res;                                                                     \
@@ -83,11 +83,11 @@
 
 // Test-and-set / Clear
 #define __atomic_test_and_set(ptr, memorder) ({ \
-    bool __old = (*(bool*)(ptr));              \
-    *(bool*)(ptr) = 1;                          \
+    _Bool __old = (*(_Bool*)(ptr));              \
+    *(_Bool*)(ptr) = 1;                          \
     __old;                                      \
 })
-#define __atomic_clear(ptr, memorder) (*(bool*)(ptr) = 0)
+#define __atomic_clear(ptr, memorder) (*(_Bool*)(ptr) = 0)
 
 // Fences (no-op)
 #define __atomic_thread_fence(memorder) ((void)0)
