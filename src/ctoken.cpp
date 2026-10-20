@@ -166,6 +166,7 @@ make_keymap()
 	m["nullptr"] = NULLPTR;
 	m["_Alignof"] = ALIGNOF;
 	m["static_assert"] = STATIC_ASSERT;
+	m["thread_local"] = THREAD_LOCAL;
 
 	/* Microsoft */
 	m["_asm"] = MSC_ASM;
@@ -194,6 +195,7 @@ make_keymap()
 	m["__restrict__"] = RESTRICT;
 	m["__signed"] = SIGNED;
 	m["__signed__"] = SIGNED;
+	m["__thread"] = THREAD_LOCAL;
 	m["__typeof"] = TYPEOF;
 	m["__typeof__"] = TYPEOF;
 	m["__typeof_unqual__"] = TYPEOF_UNQUAL;
