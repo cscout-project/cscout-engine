@@ -1,6 +1,6 @@
-.TH CSCUT 1 "21 December 2024"
+.TH CSCUT 1 "22 October 2026"
 .\"
-.\" (C) Copyright 2024 Diomidis Spinellis
+.\" (C) Copyright 2026 Diomidis Spinellis
 .\"
 .\" This file is part of CScout.
 .\"
@@ -89,7 +89,7 @@ Extract a script to process from the file \fCexport.c\fP and onward:
 .DS
 .ft C
 .nf
-cscut -f /home/dds/src/linux/fs/ocfs2/export.c linux.cs >ocfs2-export.cs
+cscut -e -f /home/dds/src/linux/fs/ocfs2/export.c linux.cs >ocfs2-export.cs
 .ft P
 .fi
 .DE
@@ -99,4 +99,4 @@ cscout(1),
 cssplit(1),
 csmake(1)
 .SH AUTHOR
-(C) Copyright 2024 Diomidis Spinellis.
+(C) Copyright 2024-2026 Diomidis Spinellis.
