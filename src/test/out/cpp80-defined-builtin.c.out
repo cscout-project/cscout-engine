@@ -1,0 +1,5 @@
+int main();
+static void _cscout_dummy1(void) { _cscout_dummy1(); }
+int OK___has_include_next;
+int OK___has_include;
+int OK_defined;

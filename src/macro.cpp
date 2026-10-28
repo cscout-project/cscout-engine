@@ -502,6 +502,32 @@ struct MacroExpansionMetricCapture {
 };
 
 /*
+ * Return true if s is an internally defined operator,
+ * i.e. one where defined(s) is true.
+ * Note that defined(defined) is false.
+ */
+bool
+Macro::is_internally_defined(const string& s)
+{
+	return s == "__has_include"		// C23
+		|| s == "__has_include_next"	// Extension
+		|| s == "__has_embed"		// C23
+		|| s == "__has_c_attribute"	// C23
+		|| s == "__has_attribute"	// Extension
+		|| s == "__has_builtin";	// Extension
+}
+
+// Return true if t is a C-preprocessor operator
+static bool
+is_cpp_operator(const Ptoken &t)
+{
+	return t.get_code() == IDENTIFIER
+		&& (
+		    t.get_val() == "defined"
+		    || Macro::is_internally_defined(t.get_val()));
+}
+
+/*
  * Expand a token sequence
  * This is an implementation of Dave Prosser's algorithm, listed in
  * X3J11/86-196 and in https://www.spinellis.gr/blog/20060626/.
@@ -550,11 +576,9 @@ macro_expand(PtokenSequence ts,
 			continue;
 		}
 
+		// In the skip context don't expand operators.
 		if (operator_handling == Macro::OperatorHandling::skip
-		    && head.get_code() == IDENTIFIER
-		    && (head.get_val() == "defined"
-		        || head.get_val() == "__has_include"
-		        || head.get_val() == "__has_include_next")) {
+		    && is_cpp_operator(head)) {
 			PtokenSequence operand(gather_operand(ts, ts.begin(),
 			    head.get_val() != "defined"));
 			r.push_back(head);
@@ -579,7 +603,8 @@ macro_expand(PtokenSequence ts,
 		}
 
 		mapMacro::const_iterator mi(Pdtoken::macros_find(name));
-		if (!Pdtoken::macro_is_defined(mi)) {
+		// Skip undefined macros
+		if (mi == Pdtoken::macros_end() || !mi->second.is_defined()) {
 			// Nothing to do if the identifier is not a macro
 			r.push_back(head);
 			continue;

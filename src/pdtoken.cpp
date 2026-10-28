@@ -575,14 +575,18 @@ process_defined()
 		// We are about to erase it
 		string val = arg->get_val();
 		if (DP()) cout << "val:" << val << "\n";
-		mapMacro::const_iterator mi = Pdtoken::macros_find(val);
+		auto mi = Pdtoken::macros_find(val);
+		bool is_defined = mi != Pdtoken::macros_end()
+		    ? mi->second.is_defined()
+		    : Macro::is_internally_defined(val);
 		if (mi != Pdtoken::macros_end())
 			Token::unify(mi->second.get_name_token(), *arg);
-		else
+		else if (!is_defined)
 			Pdtoken::create_undefined_macro(*arg);
+
 		auto after = eval_tokens.erase(start);
 		start = eval_tokens.insert(after,
-		    Ptoken(PP_NUMBER, Pdtoken::macro_is_defined(mi) ? "1" : "0"));
+		    Ptoken(PP_NUMBER, is_defined ? "1" : "0"));
 	}
 
 	if (DP()) {
@@ -596,7 +600,7 @@ process_defined()
 static bool
 process_operators()
 {
-	return process_has_include() && process_defined();
+	return process_has_include();
 }
 
 /*
@@ -627,6 +631,11 @@ eval()
 		copy(eval_tokens.begin(), eval_tokens.end(), ostream_iterator<Ptoken>(cout));
 	}
 
+	// Macro expansion step 1
+	if (!process_defined())
+		return 1;
+
+	// Macro expansion step 2
 	// Macro replace, skipping identifiers for defined operator
 	eval_tokens = macro_expand(eval_tokens, Macro::TokenSourceOption::use_supplied, Macro::OperatorHandling::skip, Macro::CalledContext::process_if);
 
@@ -635,9 +644,12 @@ eval()
 		copy(eval_tokens.begin(), eval_tokens.end(), ostream_iterator<Ptoken>(cout));
 	}
 
-	// Process defined and header availability operators.
+	// Macro expansion step 3
+	// Process remaining operators.
 	if (!process_operators())
 		return 1;
+
+	// Macro expansion step 4
 	// Change remaining identifiers to 0
 	for (auto i = eval_tokens.begin();
 	     (i = find_if(i, eval_tokens.end(), [](const Ptoken &t) { return t.get_code() == IDENTIFIER; })) != eval_tokens.end(); )
@@ -722,17 +734,21 @@ Pdtoken::process_ifdef(bool isndef)
 		// Mark the identifier as used as a preprocessor constant
 		t.set_ec_attribute(is_cpp_const);
 
-		mapMacro::const_iterator i = macros.find(t.get_val());
-		if (i == macros.end())
+		auto mi = macros.find(t.get_val());
+
+		bool is_defined = mi != Pdtoken::macros_end()
+		    ? mi->second.is_defined()
+		    : Macro::is_internally_defined(t.get_val());
+		if (mi != Pdtoken::macros_end())
+			Token::unify(mi->second.get_name_token(), t);
+		else if (!is_defined)
 			// Heuristic; assume macro, even if it is not defined
 			Pdtoken::create_undefined_macro(t);
-		else
-			Token::unify((*i).second.get_name_token(), t);
-		bool eval_res = Pdtoken::macro_is_defined(i);
+
 		if (isndef)
-			eval_res = !eval_res;
-		iftaken.push(eval_res);
-		skiplevel = eval_res ? 0 : 1;
+			is_defined = !is_defined;
+		iftaken.push(is_defined);
+		skiplevel = is_defined ? 0 : 1;
 	}
 }
 
