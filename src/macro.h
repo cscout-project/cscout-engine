@@ -119,5 +119,6 @@ public:
 	bool operator<(const Macro& other) const {
 		return name_token < other.name_token;
 	}
+	static bool is_internally_defined(const string& s);
 };
 #endif // MACRO
