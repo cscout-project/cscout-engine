@@ -37,8 +37,7 @@ using namespace std;
 // Abstract base class, used for drawing
 class GraphDisplay {
 protected:
-	FILE *fo;		// HTTP output file
-	FILE *fdot;		// Dot output file
+	FILE *fo;		// Output file
 public:
 	bool uses_swill = true;
 	bool all = false;
@@ -46,7 +45,7 @@ public:
 	string gtype;
 	string ltype;
 
-	GraphDisplay(FILE *f) : fo(f), fdot(NULL) {}
+	GraphDisplay(FILE *f) : fo(f) {}
 	virtual void head(const char *, const char *, bool) {};
 	virtual void subhead(const string &) {};
 	virtual void node(Call *) {};
@@ -61,7 +60,7 @@ public:
 // HTML output
 class GDHtml: public GraphDisplay {
 public:
-	GDHtml(FILE *f) : GraphDisplay(f) {}
+	using GraphDisplay::GraphDisplay; // Use parent ctor
 	virtual void head(const char *fname, const char *title, bool) {
 		html_head(fo, fname, title);
 		fprintf(fo, "<table border=\"0\">\n");
@@ -99,7 +98,7 @@ public:
 // Raw text output
 class GDTxt: public GraphDisplay {
 public:
-	GDTxt(FILE *f) : GraphDisplay(f) {}
+	using GraphDisplay::GraphDisplay; // Use parent ctor
        virtual void node(Call *p) {
                if (Option::print_nodes->get() && p->is_defined()) {
                        fprintf(fo, "%s\n", function_label(p, false).c_str());
@@ -127,36 +126,36 @@ public:
 // AT&T GraphViz Dot output
 class GDDot: public GraphDisplay {
 public:
-	GDDot(FILE *f) : GraphDisplay(f) {}
+	using GraphDisplay::GraphDisplay; // Use parent ctor
 	virtual void head(const char *fname, const char *title, bool empty_node);
 	virtual void node(Call *p) {
-		fprintf(fdot, "\t_%p [label=\"%s\"", (void *)p, Option::cgraph_show->get() == 'e' ? "" : function_label(p, false).c_str());
+		fprintf(fo, "\t_%p [label=\"%s\"", (void *)p, Option::cgraph_show->get() == 'e' ? "" : function_label(p, false).c_str());
 		if (isHyperlinked())
-			fprintf(fdot, ", URL=\"fun.html?f=%p\"", (void *)p);
-		fprintf(fdot, "];\n");
+			fprintf(fo, ", URL=\"fun.html?f=%p\"", (void *)p);
+		fprintf(fo, "];\n");
 	}
 
 	virtual void node(Fileid f) {
-		fprintf(fdot, "\t_%d [label=\"%s\"", f.get_id(), Option::fgraph_show->get() == 'e' ? "" : file_label(f, false).c_str());
+		fprintf(fo, "\t_%d [label=\"%s\"", f.get_id(), Option::fgraph_show->get() == 'e' ? "" : file_label(f, false).c_str());
 		if (isHyperlinked())
-			fprintf(fdot, ", URL=\"file.html?id=%d\"", f.get_id());
-		fprintf(fdot, "];\n");
+			fprintf(fo, ", URL=\"file.html?id=%d\"", f.get_id());
+		fprintf(fo, "];\n");
 	}
 
 	virtual void edge(Call *a, Call *b) {
-		fprintf(fdot, "\t_%p -> _%p;\n", (void *)a, (void *)b);
+		fprintf(fo, "\t_%p -> _%p;\n", (void *)a, (void *)b);
 	}
 
 	virtual void edge(Fileid a, Fileid b) {
-		fprintf(fdot, "\t_%d -> _%d [dir=back];\n", a.get_id(), b.get_id());
+		fprintf(fo, "\t_%d -> _%d [dir=back];\n", a.get_id(), b.get_id());
 	}
 
 	virtual void error(const char *msg) {
-		fprintf(fdot, "\tERROR [label=\"%s\" shape=plaintext];\n", msg);
+		fprintf(fo, "\tERROR [label=\"%s\" shape=plaintext];\n", msg);
 	}
 
 	virtual void tail() {
-		fprintf(fdot, "}\n");
+		fprintf(fo, "}\n");
 	}
 	virtual bool isHyperlinked() { return Option::cgraph_dot_url->get(); }
 	virtual ~GDDot() {}
@@ -170,7 +169,7 @@ private:
 	string dot;		// Absolute dot file path
 	string cmd;		// dot command
 	const char *format;	// Output format
-	FILE *result;		// Resulting image
+	FILE *result;		// Resulting image / text output
 public:
 	GDDotImage(FILE *f, const char *fmt) : GDDot(NULL), format(fmt), result(f) {}
 	void head(const char *fname, const char *title, bool empty_node);
